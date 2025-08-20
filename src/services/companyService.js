@@ -254,74 +254,82 @@ class CompanyService {
     }
   }
 
+  /**
+   * Retrieves a company ID by a specific integration attribute (e.g., WhatsApp phone number ID).
+   * It implements a cache-aside strategy:
+   * 1. Tries to fetch the company ID from a secondary index in Redis.
+   * 2. If the ID is found in the cache (cache hit), it's returned immediately.
+   * 3. If not in the cache (cache miss), it queries the database as a fallback.
+   * 4. If the company is found in the database, it asynchronously updates the Redis index
+   *    to speed up subsequent requests.
+   *
+   * @param {string} channel The communication channel (e.g., 'whatsapp', 'messenger').
+   * @param {string} attribute The unique identifier for that channel (e.g., a phone number ID or page ID).
+   * @returns {Promise<string|null>} The company ID as a string, or null if not found.
+   */
   async getIdByIntegration(channel, attribute) {
-    // Este método está diseñado para ser una capa de fallback cuando el índice de Redis no se encuentra.
-    // Busca directamente en la base de datos y, como efecto secundario,
-    // actualiza el índice de Redis para que futuras búsquedas sean más rápidas.
     try {
       if (!channel || !attribute) {
         throw new Error('channel and attribute are required');
       }
-      // --- 1. Construir el Filtro de Búsqueda ---
-      let integrationField = '';
-      const { metaChannels } = this.#constants;
 
-      switch (channel) {
-        case metaChannels.WHATSAPP:
-          integrationField = 'system_settings.meta_integrations.whatsapp.phoneNumberId';
-          break;
-        case metaChannels.MESSENGER:
-          integrationField = 'system_settings.meta_integrations.messenger.pageId';
-          break;
-        case metaChannels.INSTAGRAM:
-          integrationField = 'system_settings.meta_integrations.instagram.instagramBusinessAccountId';
-          break;
-        default:
-          this.#logger.warn({ message: `Intento de búsqueda con canal no válido`, channel });
-          return null;
+      // --- 1. Find the correct indexer configuration for the channel ---
+      const indexerConfig = this.#defaultMetaIndexers.find(
+        (indexer) => indexer.platformName === channel
+      );
+
+      if (!indexerConfig) {
+        this.#logger.warn({ message: `Intento de búsqueda con canal no válido`, channel });
+        return null;
       }
 
+      // --- 2. Try to fetch from Redis first (Cache-Aside) ---
+      const redisKey = `${indexerConfig.redisKeyPrefix}:${attribute}`;
+      const cachedCompanyId = await this.#redisService.getData(redisKey);
+
+      if (cachedCompanyId) {
+        this.#logger.verbose({ message: `Cache HIT for companyId by integration`, channel, attribute, redisKey, companyId: cachedCompanyId });
+        return cachedCompanyId;
+      }
+
+      this.#logger.verbose({ message: `Cache MISS for companyId by integration. Fetching from DB.`, channel, attribute, redisKey });
+
+      // --- 3. If not in cache, fetch from Database (Fallback) ---
+      const integrationField = `system_settings.${indexerConfig.tokenPath.join('.')}`;
       const filter = {
         active: true,
         [integrationField]: attribute
       };
 
       this.#logger.verbose({ message: `Buscando compañía por integración en DB`, filter });
-
-      // --- 2. Ejecutar la Consulta ---
-      // Se seleccionan los campos necesarios para la actualización en segundo plano del índice.
       const company = await this.#CompanyModel.findOne(filter, { _id: 1, name: 1, system_settings: 1 }).lean();
 
       if (company) {
         this.#logger.verbose({ message: `Compañía encontrada por integración`, companyId: company._id, companyName: company.name, channel, attribute });
 
-        // --- 3. Tarea en Segundo Plano: Actualizar el índice de Redis ---
-        // Se invoca sin 'await' para no bloquear la respuesta.
-        // El .catch() es crucial para registrar errores que ocurran en segundo plano.
+        // --- 4. Asynchronously update the cache for the next request ---
         this.updateIndexForChannelInRedis(company, channel)
           .then(() => {
             this.#logger.info({
-              message: `[Background Job] Índice de Redis para el canal ${channel} actualizado exitosamente`,
+              message: `[Background Job] Cache for channel ${channel} repopulated after DB fallback`,
               companyId: company._id,
               companyName: company.name
             });
           })
           .catch(error => {
             this.#logger.error({
-              message: `[Background Job] Fallo al actualizar índice de Redis para el canal ${channel}`,
+              message: `[Background Job] Failed to repopulate cache for channel ${channel}`,
               companyId: company._id,
               errorMessage: error.message,
               stack: error.stack
             });
           });
 
-        // --- 4. Devolver el Resultado ---
         return company._id;
       } else {
         this.#logger.warn({ message: `No se encontró una compañía activa con los criterios de integración`, channel, attribute });
         return null;
       }
-
     } catch (error) {
       this.#logger.error({
         message: "Ocurrió un error inesperado en getIdByIntegration",

@@ -1,6 +1,6 @@
 try {
   const packageJson = require('./package.json');
-  console.log(`--- EXECUTING VERSION ${packageJson.version} VERSION OF nodejslib ---`);
+  console.log(`--- EXECUTING VERSION ${packageJson.version} VERSION OF thothlib ---`);
 } catch (error) {
   console.error('Error leyendo package.json:', error.message);
 }
