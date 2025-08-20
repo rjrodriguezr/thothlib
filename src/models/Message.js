@@ -56,6 +56,13 @@ const MessageSchema = new Schema({
             enum: Object.values(contentType),
             default: contentType.TEXT
         },
+        // Identificador único del contacto en su plataforma (repetido de chat)
+        recipient: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        // Contenido del mensaje
         text: {
             type: String,
             trim: true
