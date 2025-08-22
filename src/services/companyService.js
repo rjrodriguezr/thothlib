@@ -14,17 +14,17 @@ class CompanyService {
 
     this.#defaultMetaIndexers = [
       {
-        platformName: this.#constants.chatSources.WHATSAPP,
+        platformName: this.#constants.channelSource.WHATSAPP,
         tokenPath: ['meta_integrations', 'whatsapp', 'phoneNumberId'],
         redisKeyPrefix: this.#constants.redisKeyPrefix.WAP_PHONE_NUMBER_ID,
       },
       {
-        platformName: this.#constants.chatSources.MESSENGER,
+        platformName: this.#constants.channelSource.MESSENGER,
         tokenPath: ['meta_integrations', 'messenger', 'pageId'],
         redisKeyPrefix: this.#constants.redisKeyPrefix.MSN_PAGE_ID,
       },
       {
-        platformName: this.#constants.chatSources.INSTAGRAM,
+        platformName: this.#constants.channelSource.INSTAGRAM,
         tokenPath: ['meta_integrations', 'instagram', 'instagramBusinessAccountId'],
         redisKeyPrefix: this.#constants.redisKeyPrefix.IGM_BUSINESS_ACCOUNT_ID,
       }
