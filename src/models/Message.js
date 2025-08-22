@@ -25,6 +25,7 @@ const MessageSchema = new Schema({
         ref: 'Company',
         required: true
     },
+    channel: {type:String, required:true},
     // Campo recomendado para guardar el ID de Meta y poder buscarlo con el webhook
     metaMessageId: {
         type: String,
