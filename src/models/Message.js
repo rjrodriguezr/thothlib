@@ -25,7 +25,13 @@ const MessageSchema = new Schema({
         ref: 'Company',
         required: true
     },
-    channel: {type:String, required:true},
+    channel: { type: String, required: true },
+    // Identificador único del contacto en su plataforma (repetido de chat)
+    recipient: {
+        type: String,
+        required: true,
+        trim: true
+    },
     // Campo recomendado para guardar el ID de Meta y poder buscarlo con el webhook
     metaMessageId: {
         type: String,
@@ -57,12 +63,6 @@ const MessageSchema = new Schema({
             enum: Object.values(contentType),
             default: contentType.TEXT
         },
-        // Identificador único del contacto en su plataforma (repetido de chat)
-        recipient: {
-            type: String,
-            required: true,
-            trim: true
-        },
         // Contenido del mensaje
         text: {
             type: String,
@@ -80,7 +80,7 @@ const MessageSchema = new Schema({
     }
 });
 
-MessageSchema.post('findOneAndUpdate', async function(doc) {
+MessageSchema.post('findOneAndUpdate', async function (doc) {
     // 'doc' es el documento DESPUÉS de ser actualizado.
     // IMPORTANTE: Para que 'doc' no sea null, la consulta en tu worker DEBE
     // usar la opción { new: true }. Ejemplo:
