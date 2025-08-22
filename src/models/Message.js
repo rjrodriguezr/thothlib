@@ -32,6 +32,12 @@ const MessageSchema = new Schema({
         required: true,
         trim: true
     },
+    type: {
+        type: String,
+        required: true,
+        enum: Object.values(contentType),
+        default: contentType.TEXT
+    },
     // Campo recomendado para guardar el ID de Meta y poder buscarlo con el webhook
     metaMessageId: {
         type: String,
@@ -57,12 +63,6 @@ const MessageSchema = new Schema({
     },
     // Contenido flexible del mensaje
     content: {
-        type: {
-            type: String,
-            required: true,
-            enum: Object.values(contentType),
-            default: contentType.TEXT
-        },
         // Contenido del mensaje
         text: {
             type: String,
