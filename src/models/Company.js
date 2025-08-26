@@ -56,6 +56,7 @@ const CompanySchema = Schema({
         clientWebhookUrl: {type: String, default: null}, // URL del webhook del cliente para recibir notificaciones de Meta
         webhookVerifyToken: {type: String, default: null}, // Token para la configuración inicial del webhook
         whatsapp: {
+          wabaId:{type: String, default: null},
           isEnabled: false,
           accessToken: {type: String, default: null},
           phoneNumberId: {type: String, default: null},          
