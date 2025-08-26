@@ -1,6 +1,7 @@
 const logger = require('../../lib/logger');
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
+const APP_DOMAIN = process.env.APP_DOMAIN ||'https://viainnovacion.com';
 
 const CompanySchema = Schema({
   name: {
@@ -50,29 +51,25 @@ const CompanySchema = Schema({
       },
       // --- Nuevas configuraciones para Meta ---
       meta_integrations: { // Agrupamos las configuraciones de Meta aquí
-        metaAppId: null, // ID de la App de Meta general si se usa una para varios clientes
+        appId: {type: String, default: null}, // ID de la App de Meta general si se usa una para varios clientes
+        appSecret: {type: String, default: null}, // Para verificar webhooks de WhatsApp
+        clientWebhookUrl: {type: String, default: null}, // URL del webhook del cliente para recibir notificaciones de Meta
+        webhookVerifyToken: {type: String, default: null}, // Token para la configuración inicial del webhook
         whatsapp: {
           isEnabled: false,
-          accessToken: null,
-          phoneNumberId: null,
-          appSecret: null, // Para verificar webhooks de WhatsApp
-          webhookVerifyToken: null, // Token para la configuración inicial del webhook
+          accessToken: {type: String, default: null},
+          phoneNumberId: {type: String, default: null},          
         },
         messenger: {
           isEnabled: false,
-          accessToken: null,
-          pageId: null,
-          appSecret: null,
-          webhookVerifyToken: null,
+          accessToken: {type: String, default: null},
+          pageId: {type: String, default: null},
         },
         instagram: {
           isEnabled: false,
-          accessToken: null,
-          instagramBusinessAccountId: null,
-          appSecret: null,
-          webhookVerifyToken: null,
+          accessToken: {type: String, default: null},
+          instagramBusinessAccountId: {type: String, default: null},
         },
-        clientWebhookUrl: null, // URL del webhook del cliente para recibir notificaciones de Meta
         eventSubscriptions: { // Qué eventos de Meta notificar al cliente
           whatsapp_messages: false,
           instagram_messages: false,
@@ -127,7 +124,17 @@ CompanySchema.post('findOneAndUpdate', async function (doc) {
   }
 });
 
-// Hook para guardar en Redis después de cada save o update
+// Hook para establecer valores por defecto ANTES de guardar un nuevo documento
+CompanySchema.pre('save', function (next) {
+  // this.isNew es true solo cuando el documento se crea por primera vez.
+  if (this.isNew) {
+    // Asignamos la URL del webhook usando el _id que Mongoose genera antes de guardar.
+    this.system_settings.meta_integrations.clientWebhookUrl = `${APP_DOMAIN}/webhook/meta/${this._id}`;
+  }
+  next(); // Continuamos con la operación de guardado.
+});
+
+// Hook para guardar en Redis DESPUÉS de cada save o update
 CompanySchema.post('save', async function (doc) {
   try {
     const { companyService } = require('../services');
@@ -138,6 +145,6 @@ CompanySchema.post('save', async function (doc) {
 });
 
 // Aplicar el plugin de auditoría
-CompanySchema.plugin(modelAuditPlugin);
+CompanySchema.plugin(modelAuditPlugin); 
 
 module.exports = model('Company', CompanySchema);
