@@ -1,10 +1,3 @@
-try {
-  const packageJson = require('./package.json');
-  console.log(`--- EXECUTING VERSION ${packageJson.version} VERSION OF thothlib ---`);
-} catch (error) {
-  console.error('Error leyendo package.json:', error.message);
-}
-
 // Libs - Core, standalone utilities
 const axiosClient = require('./lib/axiosClient');
 const catalog = require('./lib/catalog');
@@ -21,6 +14,13 @@ const middlewares = require('./src/middlewares');
 const models = require('./src/models');
 const services = require('./src/services');
 const validators = require('./src/validators');
+
+try {
+  const packageJson = require('./package.json');
+  logger.info(`--- EXECUTING VERSION ${packageJson.version} VERSION OF thothlib ---`);
+} catch (error) {
+  logger.error('Error leyendo package.json:', error.message);
+}
 
 module.exports = {
   // Libs
