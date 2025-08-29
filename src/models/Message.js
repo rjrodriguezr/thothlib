@@ -80,53 +80,6 @@ const MessageSchema = new Schema({
     }
 });
 
-MessageSchema.post('findOneAndUpdate', async function (doc) {
-    // 'doc' es el documento DESPUÉS de ser actualizado.
-    // IMPORTANTE: Para que 'doc' no sea null, la consulta en tu worker DEBE
-    // usar la opción { new: true }. Ejemplo:
-    // await Message.findOneAndUpdate({ _id }, update, { new: true });
-
-    if (!doc) {
-        logger.warn('Hook findOneAndUpdate ejecutado pero no se encontró el documento. ¿Falta { new: true } en la consulta?');
-        return;
-    }
-
-    // Verificamos si el campo 'status' fue parte de esta actualización específica.
-    const update = this.getUpdate();
-    const newStatus = update.$set && update.$set.status;
-
-    if (!newStatus) {
-        // El estado no cambió en esta operación, no hay nada que notificar.
-        return;
-    }
-
-    // Solo publicamos si el cliente de Redis está listo.
-    if (!redisService.client || redisService.client.status !== 'ready') {
-        logger.error(`Redis no está listo. No se pudo publicar la actualización de estado para el mensaje ${doc._id}`);
-        return;
-    }
-
-    try {
-        const notificationPayload = {
-            messageId: doc._id.toString(),
-            chatId: doc.chat.toString(),
-            newStatus: newStatus,
-            metaMessageId: doc.metaMessageId,
-            updatedAt: doc.updatedAt // Incluir la fecha de actualización es útil
-        };
-
-        // Publicamos el evento en un canal de Pub/Sub.
-        // La API 'MESSAGES' estará suscrita a este canal.
-        const channel = redisChannels.MESSAGE_UPDATE;
-        await redisService.publish(channel, notificationPayload);
-
-        logger.debug(`Evento de estado '${newStatus}' para mensaje ${doc._id} publicado en el canal '${channel}'.`);
-
-    } catch (error) {
-        logger.error(`Error en el hook post-findOneAndUpdate para el mensaje ${doc._id}:`, error);
-    }
-});
-
 MessageSchema.plugin(modelAuditPlugin);
 
 module.exports = model('Message', MessageSchema);
