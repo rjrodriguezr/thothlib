@@ -58,16 +58,12 @@ const MessageSchema = new Schema({
             required: true
         }
     },
-    // Contenido flexible del mensaje
+    // Contenido flexible del mensaje, la estructura varía según el campo 'type'.
+    // Ej: { text: 'hola' } para 'text', { url: '...', caption: '...' } para 'image', etc.
     content: {
-        // Contenido del mensaje
-        text: {
-            type: String,
-            trim: true
-        },
-        // URL para archivos, imágenes, etc.
-        url: String,
-        caption: String // Pie de foto para imágenes
+        type: Schema.Types.Mixed,
+        required: true,
+        default: {}
     },
     // Estado de entrega del mensaje
     status: {
