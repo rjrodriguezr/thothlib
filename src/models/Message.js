@@ -1,6 +1,4 @@
-const logger = require('../../lib/logger');
 const { Schema, model } = require('mongoose');
-const redisService = require('../../lib/redisService'); // 1. Importamos el servicio de Redis
 const { modelAuditPlugin } = require('../middlewares');
 const { deliveryType, contentType, senderType, redisChannels } = require('../../lib/constants');
 
@@ -16,7 +14,6 @@ const MessageSchema = new Schema({
     conversation: {
         type: Schema.Types.ObjectId,
         ref: 'Conversation',
-        required: true,
         index: true
     },
     // Referencia a la empresa para facilitar consultas
