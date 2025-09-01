@@ -18,6 +18,10 @@ const CompanySchema = Schema({
     type: String,
     default: ''
   },
+  modules: {
+    type: [String],
+    default: []
+  },
   responsible: {
     name: {
       type: String,

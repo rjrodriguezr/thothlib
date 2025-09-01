@@ -13,7 +13,7 @@ const UserSchema = new Schema({
             return !this.roles.includes(rol.SYSTEM_ADMIN_ROLE);
         }
     },
-    // TODO ENCCRIPTAR EL EMAIL
+    // TODO ENCRIPTAR EL EMAIL
     email: {
         type: String,
         required: [true, 'Email is required'],
@@ -135,6 +135,13 @@ UserSchema.pre('save', async function (next) {
                 const emailPart = this.email.split('@')[0].trim();
                 this.username = emailPart.toLowerCase();
             }
+        }
+
+        // Generar avatar aleatorio si no se ha proporcionado uno
+        if (!this.profile.avatar) {
+            const gender = this.profile.gender.toLowerCase();
+            const randomNumber = Math.floor(Math.random() * 17) + 1; // Número aleatorio entre 1 y 7
+            this.profile.avatar = `admin-${gender}-${randomNumber}.png`;
         }
 
         next();
