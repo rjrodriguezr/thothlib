@@ -1,4 +1,5 @@
 const logger = require('../../lib/logger');
+const redisService = require('../../lib/redisService');
 
 /**
  * BaseController
@@ -112,8 +113,9 @@ class BaseController {
         }
 
         // Extrae 'fields' del query y lo elimina del objeto de filtros
-        const { fields } = query;
+        const { fields, rediskey } = query;
         delete query.fields;
+        delete query.rediskey;
 
         // Determinar si estamos buscando un elemento específico por ID
         const isSingleItemQuery = query._id !== undefined;
@@ -129,7 +131,19 @@ class BaseController {
 
         // Ejecuta la consulta
         sql.exec()
-            .then(result => {
+            .then(async result => {
+                // Si se proporcionó una rediskey y el resultado es válido, guardar en Redis
+                if (rediskey && result) {
+                    try {
+                        // Guardar en Redis con un TTL de 1 hora (3600 segundos)
+                        await redisService.setData(rediskey, result, ['EX', 3600]);
+                        logger.verbose(`Resultado para la clave '${rediskey}' cacheado en Redis.`);
+                    } catch (redisErr) {
+                        // No bloquear la respuesta si Redis falla, solo registrar el error
+                        logger.error(`Error al cachear el resultado en Redis para la clave '${rediskey}':`, redisErr);
+                    }
+                }
+
                 if (isSingleItemQuery && result.length === 1) {
                     res.json(result[0]);
                 } else {
