@@ -140,7 +140,7 @@ UserSchema.pre('save', async function (next) {
         // Generar avatar aleatorio si no se ha proporcionado uno
         if (!this.profile.avatar) {
             const gender = this.profile.gender.toLowerCase();
-            const randomNumber = Math.floor(Math.random() * 17) + 1; // Número aleatorio entre 1 y 7
+            const randomNumber = Math.floor(Math.random() * 23) + 1; // Número aleatorio entre 1 y 7
             this.profile.avatar = `admin-${gender}-${randomNumber}.png`;
         }
 

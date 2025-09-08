@@ -1,6 +1,6 @@
 {
   "name": "thothlib",
-  "version": "1.4.4",
+  "version": "1.4.6",
   "description": "Libreria de utilidades para apis de sistema thoth",
   "main": "./index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rjrodriguezr/nodejslib.git"
+    "url": "git+https://github.com/rjrodriguezr/thothlib.git"
   },
   "keywords": [
     "nodejs",
@@ -18,9 +18,9 @@
   "author": "rjrodriguezr",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/rjrodriguezr/nodejslib/issues"
+    "url": "https://github.com/rjrodriguezr/thothlib/issues"
   },
-  "homepage": "https://github.com/rjrodriguezr/nodejslib#readme",
+  "homepage": "https://github.com/rjrodriguezr/thothlib#readme",
   "peerDependencies": {
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",

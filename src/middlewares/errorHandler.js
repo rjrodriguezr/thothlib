@@ -28,19 +28,4 @@ const responseHandleError = (err, req, res) => {
     res.status(statusCode).json(responseError);
 };
 
-/**
- * Middleware de manejo de errores global.
- * Este middleware debe ser el último en la cadena de middlewares de Express.
- */
-const middlewareHandleError = (err, req, res, next) => {
-    // Si los encabezados ya se enviaron, delega a Express. Esta es la única lógica de middleware que queda.
-    if (res.headersSent) {
-        logger.warn('[HandleErrorResponse] Los headers ya fueron enviados. No se puede enviar nueva respuesta.');
-        return next(err);
-    }
-
-    // En todos los demás casos, usa la función de lógica centralizada.
-    responseHandleError(err, req, res);
-};
-
-module.exports = {responseHandleError, middlewareHandleError};
+module.exports = responseHandleError;
