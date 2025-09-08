@@ -1,3 +1,4 @@
+const BaseService = require('./BaseService');
 const CompanyService = require('./companyService');
 const logger = require('../../lib/logger');
 const redisService = require('../../lib/redisService');
@@ -13,5 +14,6 @@ const companyService = new CompanyService({
 });
 
 module.exports = {
+    BaseService,
     companyService
 };
