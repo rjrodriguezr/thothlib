@@ -22,13 +22,13 @@
   },
   "homepage": "https://github.com/rjrodriguezr/thothlib#readme",
   "peerDependencies": {
-    "axios": "^1.9.0",
+    "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
     "express-validator": "^7.2.1",
-    "ioredis": "^5.6.1",
-    "mongoose": "^8.10.1",
-    "winston": "^3.17.0"
+    "ioredis": "^5.7.0",
+    "mongoose": "^8.18.1",
+    "pino": "^9.9.4"
   }
 }
