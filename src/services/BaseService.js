@@ -59,18 +59,22 @@ class BaseService {
      * Obtiene uno o más documentos de la base de datos.
      * Permite filtrar, seleccionar campos específicos (proyección) y cachear los resultados en Redis.
      *
+     * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
      * @param {object} query - Objeto de consulta que puede contener:
-     * @param {object} query - ...filtros para la consulta de Mongoose (ej. `{ active: true }`). El filtrado por compañía
-     * debe incluirse aquí como `query.company = companyId` si es necesario.
+     * @param {object} query - ...filtros adicionales para la consulta de Mongoose (ej. `{ active: true }`).
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
      * @param {string} [query.redisKey] - Una clave de Redis opcional. Si se proporciona, el resultado se cacheará bajo esta clave.
      * @returns {Promise<object|Array<object>>} Devuelve un único objeto si la consulta incluye `_id`, o un array de objetos en caso contrario.
      * @throws {Error} Lanza una excepción si ocurre un error durante la consulta a la base de datos.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
-    async get(query) {
+    async get(companyId, query) {
         // Clona los parámetros del query
         let match = { ...query };
+
+        if (companyId) {
+            match.company = companyId;
+        }
 
         // Extrae 'fields' del query y lo elimina del objeto de filtros
         const { fields, redisKey } = match;
