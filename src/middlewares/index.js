@@ -1,5 +1,5 @@
 const authClient = require('./authClient');
-const  responseHandleError = require('./errorHandler');
+const responseHandleError = require('./responseHandleError');
 const modelAuditPlugin = require('./modelAuditPlugin');
 
 module.exports = {
