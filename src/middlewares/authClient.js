@@ -26,7 +26,7 @@ const { headers, WEBHOOK_SOURCE_TYPE } = require('../../lib/constants');
  */
 const authClient = async (req, res, next) => {
     logger.debug("[authClient] INICIO de la validacion del request");
-    logger.silly({ msg: "[authClient]", headers: req.headers });
+    logger.debug({ msg: "[authClient]", headers: req.headers });
 
     // Extraer datos de usuario desde headers personalizados    
     const sourceType = req.header(headers.SOURCE_TYPE);
