@@ -1,5 +1,4 @@
 const logger = require("../../lib/logger");
-const redisService = require("../../lib/redisService");
 class BaseService {
     /**
      * Crea una instancia de BaseService.
@@ -22,6 +21,40 @@ class BaseService {
             if (match[key] === 'false') match[key] = false;
         }
         return match;
+    }
+
+    /**
+     * Construye una consulta de Mongoose basada en los parámetros de filtrado y proyección.
+     * Este método centraliza la lógica común para `selectAll` y `selectOne`.
+     *
+     * @param {string | undefined | null} companyId - El ID de la compañía para filtrar.
+     * @param {object} query - El objeto de consulta original.
+     * @param {string} methodName - El nombre del método de Mongoose a utilizar ('find' o 'findOne').
+     * @returns {mongoose.Query} La consulta de Mongoose construida.
+     * @private
+     */
+    _buildQuery(companyId, query, methodName) {
+        // Clona los parámetros del query para no mutar el objeto original
+        const match = { ...query };
+
+        if (companyId) {
+            match.company = companyId;
+        }
+
+        // Extrae 'fields' del query y lo elimina del objeto de filtros
+        const { fields } = match;
+        delete match.fields;
+
+        // Construye la consulta base usando el método especificado ('find' o 'findOne')
+        let sql = this.model[methodName](this._normalizeMatch(match));
+
+        // Si hay campos específicos, aplica proyección
+        if (fields) {
+            const projection = fields.replace(/,/g, ' ');
+            sql = sql.select(projection);
+        }
+
+        return sql;
     }
 
     /**
@@ -57,58 +90,35 @@ class BaseService {
 
     /**
      * Obtiene uno o más documentos de la base de datos.
-     * Permite filtrar, seleccionar campos específicos (proyección) y cachear los resultados en Redis.
+     * Permite filtrar y seleccionar campos específicos (proyección).
      *
      * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
      * @param {object} query - Objeto de consulta que puede contener:
      * @param {object} query - ...filtros adicionales para la consulta de Mongoose (ej. `{ active: true }`).
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
-     * @param {string} [query.redisKey] - Una clave de Redis opcional. Si se proporciona, el resultado se cacheará bajo esta clave.
-     * @returns {Promise<object|Array<object>>} Devuelve un único objeto si la consulta incluye `_id`, o un array de objetos en caso contrario.
+     * @returns {Promise<Array<object>>} Devuelve un array de objetos.
      * @throws {Error} Lanza una excepción si ocurre un error durante la consulta a la base de datos.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
-    async get(companyId, query) {
-        // Clona los parámetros del query
-        let match = { ...query };
+    async selectAll(companyId, query) {
+        const sql = this._buildQuery(companyId, query, 'find');
+        return sql.exec();
+    }
 
-        if (companyId) {
-            match.company = companyId;
-        }
-
-        // Extrae 'fields' del query y lo elimina del objeto de filtros
-        const { fields, redisKey } = match;
-        delete match.fields;
-        delete match.redisKey;
-
-        // Determinar si estamos buscando un elemento específico por ID
-        const isSingleItemQuery = match._id !== undefined;
-
-        // Construye la consulta
-        let sql = this.model.find(this._normalizeMatch(match));
-
-        // Si hay campos específicos, aplica proyección
-        if (fields) {
-            const projection = fields.replace(/,/g, ' ');
-            sql = sql.select(projection);
-        }
-
-        // Ejecuta la consulta
-        const result = await sql.exec();
-
-        if (isSingleItemQuery && result.length === 1) {
-            return result[0];
-        } else {
-            // Si se proporcionó una rediskey y el resultado es válido, guardar en Redis
-            if (redisKey && result) {
-                // Ejecutar en segundo plano (fire-and-forget) sin esperar para no bloquear la respuesta.
-                redisService.setData(redisKey, result, ['EX', 3600])
-                    .then(() => logger.trace(`Resultado para la clave '${redisKey}' cacheado en Redis.`))
-                    .catch(redisErr => logger.error(`Error al cachear el resultado en Redis para la clave '${redisKey}':`, redisErr));
-            }
-            return result;
-        }
-
+    /**
+     * Obtiene un único documento de la base de datos.
+     * Se utiliza para consultas que se espera que devuelvan un solo resultado.
+     *
+     * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
+     * @param {object} query - Objeto de consulta con los filtros para encontrar el documento (ej. `{ email: 'test@test.com' }`).
+     * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
+     * @returns {Promise<object|null>} Devuelve el primer documento que coincida con la consulta, o `null` si no se encuentra ninguno.
+     * @throws {Error} Lanza una excepción si ocurre un error en la base de datos.
+     * El llamador es responsable de capturar y manejar esta excepción.
+     */
+    async selectOne(companyId, query) {
+        const sql = this._buildQuery(companyId, query, 'findOne');
+        return sql.exec();
     }
 
     /**

@@ -1,6 +1,6 @@
 {
   "name": "thothlib",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "description": "Libreria de utilidades para apis de sistema thoth",
   "main": "./index.js",
   "scripts": {
@@ -30,5 +30,8 @@
     "ioredis": "^5.7.0",
     "mongoose": "^8.18.1",
     "pino": "^9.9.4"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.1.1"
   }
 }
