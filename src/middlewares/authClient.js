@@ -31,9 +31,9 @@ const authClient = async (req, res, next) => {
     // Extraer datos de usuario desde headers personalizados    
     const sourceType = req.header(headers.SOURCE_TYPE);
     if (sourceType && sourceType === WEBHOOK_SOURCE_TYPE) {
-        logger.verbose(`[authClient] sourceType: ${sourceType}, ignorando la validacion de seguridad de llamados internos `);
+        logger.trace(`[authClient] sourceType: ${sourceType}, ignorando la validacion de seguridad de llamados internos `);
     } else {
-        logger.verbose("[authClient] No sourceType presente por lo que se procesan cabeceras de llamados internos");
+        logger.trace("[authClient] No sourceType presente por lo que se procesan cabeceras de llamados internos");
         const companyId = req.header(headers.COMPANY_ID);
         const userId = req.header(headers.USER_ID);
         const username = req.header(headers.USER_NAME); 
@@ -48,7 +48,7 @@ const authClient = async (req, res, next) => {
             userId,
             username,
         };
-        logger.verbose({file:'[authClient]',token:req.token});
+        logger.trace({file:'[authClient]',token:req.token});
     }
 
     next();

@@ -17,7 +17,7 @@ class CompanyService {
   async #saveMainCompanySettings(companyId, systemSettings, companyName) {
     const redisKey = `${this.#constants.redisKeyPrefix.COMPANY_SETTINGS}:${companyId}`;
     await this.#redisService.setData(redisKey, systemSettings);
-    this.#logger.verbose({ message: `Configuración principal de la empresa ${companyName} (${companyId}) guardada en Redis`, redisKey });
+    this.#logger.trace({ message: `Configuración principal de la empresa ${companyName} (${companyId}) guardada en Redis`, redisKey });
   }
 
   /**
@@ -52,7 +52,7 @@ class CompanyService {
       // Esto permite recuperar toda la configuración de una empresa con una sola consulta a Redis.
       await this.#saveMainCompanySettings(companyId, systemSettings, companyName);
 
-      this.#logger.verbose({ message: `Configuración de la empresa ${companyName} guardada en Redis`, companyId });
+      this.#logger.trace({ message: `Configuración de la empresa ${companyName} guardada en Redis`, companyId });
     } catch (error) {
       // --- 5. Manejo de Errores Generales ---
       // Captura errores del guardado principal o cualquier otro error no capturado en el bucle.
@@ -88,12 +88,12 @@ class CompanyService {
       // 1. Try to get from Redis first
       const cachedSettings = await this.#redisService.getData(redisKey);
       if (cachedSettings) {
-        this.#logger.verbose({ message: `Cache HIT for company settings`, companyId, redisKey });
+        this.#logger.trace({ message: `Cache HIT for company settings`, companyId, redisKey });
         // The service stores objects, so no need to parse unless it's configured differently
         return cachedSettings;
       }
 
-      this.#logger.verbose({ message: `Cache MISS for company settings. Fetching from DB to repopulate.`, companyId });
+      this.#logger.trace({ message: `Cache MISS for company settings. Fetching from DB to repopulate.`, companyId });
 
       // 2. If not in cache, get the full company object from DB
       // We need `_id`, `name`, and `system_settings` for `saveSettingInRedis`

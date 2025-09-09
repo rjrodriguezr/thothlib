@@ -99,7 +99,7 @@ class BaseService {
             if (redisKey && result) {
                 // Ejecutar en segundo plano (fire-and-forget) sin esperar para no bloquear la respuesta.
                 redisService.setData(redisKey, result, ['EX', 3600])
-                    .then(() => logger.verbose(`Resultado para la clave '${redisKey}' cacheado en Redis.`))
+                    .then(() => logger.trace(`Resultado para la clave '${redisKey}' cacheado en Redis.`))
                     .catch(redisErr => logger.error(`Error al cachear el resultado en Redis para la clave '${redisKey}':`, redisErr));
             }
             return result;
