@@ -144,6 +144,10 @@ class BaseService {
         const totalPages = Math.ceil(totalDocs / limit);
         logger.trace({file:'[BaseService].selectAll', docs, totalDocs, totalPages });
 
+        for (const doc of docs) {
+            logger.debug(`[BaseService] selectAll -> doc: ${JSON.stringify(doc)}`);
+        }
+
         // 5. Devolver objeto de paginación
         return {
             docs,
