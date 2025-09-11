@@ -223,8 +223,8 @@ class BaseService {
      */
     async selectOne(companyId, query) {
         const { query: sql } = this._buildQuery(companyId, query, 'findOne');
-        const result = await sql.exec();
-        return result || new this.model();
+        //const result = await sql.exec();
+        return await sql.exec();
     }
 
     /**
