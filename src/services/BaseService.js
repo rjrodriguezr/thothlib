@@ -69,7 +69,7 @@ class BaseService {
 
         // 5. Construir la condición $or para la búsqueda (case-insensitive)
         const orConditions = fieldsToSearch.map(field => ({
-            [field]: { $regex: searchTerm, $options: 'i' }
+            [field]: { $regex: new RegExp(searchTerm, 'i') }
         }));
 
         // 6. Combinar el filtro base con la condición de búsqueda
