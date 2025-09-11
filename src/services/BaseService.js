@@ -217,13 +217,14 @@ class BaseService {
      * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
      * @param {object} query - Objeto de consulta con los filtros para encontrar el documento (ej. `{ email: 'test@test.com' }`).
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
-     * @returns {Promise<object|null>} Devuelve el primer documento que coincida con la consulta, o `null` si no se encuentra ninguno.
+     * @returns {Promise<object>} Devuelve el documento que coincida con la consulta, o una nueva instancia vacía del modelo si no se encuentra ninguno.
      * @throws {Error} Lanza una excepción si ocurre un error en la base de datos.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectOne(companyId, query) {
         const { query: sql } = this._buildQuery(companyId, query, 'findOne');
-        return sql.exec();
+        const result = await sql.exec();
+        return result || new this.model();
     }
 
     /**
