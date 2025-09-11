@@ -72,11 +72,21 @@ class BaseService {
             [field]: { $regex: new RegExp(searchTerm, 'i') }
         }));
 
-        // 6. Combinar el filtro base con la condición de búsqueda
-        return {
-            ...baseFilter,
-            $or: orConditions
-        };
+        // 6. Combinar el filtro base con la condición de búsqueda de forma robusta usando $and.
+        // Esto asegura que las condiciones del filtro base y las condiciones de búsqueda (search)
+        // se apliquen conjuntamente.
+        const finalFilter = {};
+        const andClauses = [];
+
+        // Añadir el filtro base si no está vacío
+        if (Object.keys(baseFilter).length > 0) {
+            andClauses.push(baseFilter);
+        }
+        // Añadir la condición de búsqueda
+        andClauses.push({ $or: orConditions });
+
+        finalFilter.$and = andClauses;
+        return finalFilter;
     }
 
     /**
