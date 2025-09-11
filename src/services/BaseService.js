@@ -32,17 +32,58 @@ class BaseService {
      * @private
      */
     _buildFilter(companyId, query) {
-        const filter = { ...query };
+        const filter = { ...query }; // Clonar para no mutar el original
         if (companyId) {
             filter.company = companyId;
         }
-        // Eliminar claves de control que no son parte del filtro del modelo
+
+        // 1. Extraer términos de control y búsqueda
+        const searchTerm = filter.search;
+        const searchFieldsStr = filter.fields;
+
+        // 2. Eliminar claves de control que no son parte del filtro del modelo
         delete filter.fields;
         delete filter.page;
         delete filter.limit;
         delete filter.sort;
+        delete filter.search; // Importante eliminar 'search' para que no sea tratado como un campo de filtro
 
-        return this._normalizeMatch(filter);
+        const baseFilter = this._normalizeMatch(filter);
+
+        // 3. Si no hay término de búsqueda, devolver el filtro base
+        if (!searchTerm) {
+            return baseFilter;
+        }
+
+        // 4. Determinar en qué campos buscar
+        let fieldsToSearch = [];
+        if (searchFieldsStr) {
+            fieldsToSearch = searchFieldsStr.split(',').map(f => f.trim());
+        } else {
+            // Si no se especifican campos, buscar en todos los campos de tipo String del esquema
+            const schemaPaths = this.model.schema.paths;
+            fieldsToSearch = Object.keys(schemaPaths).filter(path =>
+                schemaPaths[path].instance === 'String' &&
+                !path.startsWith('_') && // Excluir __v, etc.
+                !['company', 'created_by', 'modified_by'].includes(path) // Excluir campos de auditoría/relación
+            );
+        }
+
+        if (fieldsToSearch.length === 0) {
+            logger.warn(`Se proporcionó el parámetro 'search' pero no se encontraron campos para buscar en el modelo ${this.model.modelName}.`);
+            return baseFilter; // No hay campos en los que buscar, devolver filtro base
+        }
+
+        // 5. Construir la condición $or para la búsqueda (case-insensitive)
+        const orConditions = fieldsToSearch.map(field => ({
+            [field]: { $regex: searchTerm, $options: 'i' }
+        }));
+
+        // 6. Combinar el filtro base con la condición de búsqueda
+        return {
+            ...baseFilter,
+            $or: orConditions
+        };
     }
 
     /**
