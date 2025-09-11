@@ -124,11 +124,10 @@ class BaseService {
         const skip = (page - 1) * limit;
         const sortOrder = query.sort ? query.sort.replace(/,/g, ' ') : '-createdAt';
 
-        logger.trace({ page, limit, skip, sortOrder });
 
         // 2. Construir la consulta principal y la de conteo
         const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
-        logger.trace({ findQuery, filter });
+        logger.trace({file:'[BaseService].selectAll', page, limit, skip, sortOrder, filter });
 
         // 3. Ejecutar consultas en paralelo para eficiencia
         const [docs, totalDocs] = await Promise.all([
@@ -143,6 +142,7 @@ class BaseService {
 
         // 4. Calcular metadatos de paginación
         const totalPages = Math.ceil(totalDocs / limit);
+        logger.trace({file:'[BaseService].selectAll', docs, totalDocs, totalPages });
 
         // 5. Devolver objeto de paginación
         return {
