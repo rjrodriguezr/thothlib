@@ -124,8 +124,11 @@ class BaseService {
         const skip = (page - 1) * limit;
         const sortOrder = query.sort ? query.sort.replace(/,/g, ' ') : '-createdAt';
 
+        logger.trace({ page, limit, skip, sortOrder });
+
         // 2. Construir la consulta principal y la de conteo
         const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
+        logger.trace({ findQuery, filter });
 
         // 3. Ejecutar consultas en paralelo para eficiencia
         const [docs, totalDocs] = await Promise.all([
