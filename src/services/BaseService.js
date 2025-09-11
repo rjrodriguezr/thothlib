@@ -39,7 +39,6 @@ class BaseService {
 
         // 1. Extraer términos de control y búsqueda
         const searchTerm = filter.search;
-        const searchFieldsStr = filter.fields;
 
         // 2. Eliminar claves de control que no son parte del filtro del modelo
         delete filter.fields;
@@ -55,22 +54,16 @@ class BaseService {
             return baseFilter;
         }
 
-        // 4. Determinar en qué campos buscar
-        let fieldsToSearch = [];
-        if (searchFieldsStr) {
-            fieldsToSearch = searchFieldsStr.split(',').map(f => f.trim());
-        } else {
-            // Si no se especifican campos, buscar en todos los campos de tipo String del esquema
-            const schemaPaths = this.model.schema.paths;
-            fieldsToSearch = Object.keys(schemaPaths).filter(path =>
-                schemaPaths[path].instance === 'String' &&
-                !path.startsWith('_') && // Excluir __v, etc.
-                !['company', 'created_by', 'modified_by'].includes(path) // Excluir campos de auditoría/relación
-            );
-        }
+        // 4. Determinar en qué campos buscar: siempre en todos los campos de tipo String del esquema.
+        const schemaPaths = this.model.schema.paths;
+        const fieldsToSearch = Object.keys(schemaPaths).filter(path =>
+            schemaPaths[path].instance === 'String' &&
+            !path.startsWith('_') && // Excluir __v, etc.
+            !['company', 'created_by', 'modified_by'].includes(path) // Excluir campos de auditoría/relación
+        );
 
         if (fieldsToSearch.length === 0) {
-            logger.warn(`Se proporcionó el parámetro 'search' pero no se encontraron campos para buscar en el modelo ${this.model.modelName}.`);
+            logger.warn(`Se proporcionó el parámetro 'search' pero no se encontraron campos de tipo String para buscar en el modelo ${this.model.modelName}.`);
             return baseFilter; // No hay campos en los que buscar, devolver filtro base
         }
 
