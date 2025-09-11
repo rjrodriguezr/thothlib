@@ -62,11 +62,16 @@ class BaseService {
         // Construye la consulta base usando el método especificado ('find' o 'findOne')
         let sql = this.model[methodName](filter);
 
-        // Si hay campos específicos, aplica proyección
+        // Define la proyección
+        let projection;
         if (query.fields) {
-            const projection = query.fields.replace(/,/g, ' ');
-            sql = sql.select(projection);
+            // Si el usuario especifica campos, se respeta su selección.
+            projection = query.fields.replace(/,/g, ' ');
+        } else {
+            // Por defecto, se excluyen los campos de auditoría y estado.
+            projection = '-active -created_by -created_at -modified_by -modified_at';
         }
+        sql = sql.select(projection);
 
         return { query: sql, filter };
     }
@@ -127,7 +132,6 @@ class BaseService {
 
         // 2. Construir la consulta principal y la de conteo
         const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
-        logger.trace({file:'[BaseService].selectAll', page, limit, skip, sortOrder, filter });
 
         // 3. Ejecutar consultas en paralelo para eficiencia
         const [docs, totalDocs] = await Promise.all([
@@ -142,11 +146,13 @@ class BaseService {
 
         // 4. Calcular metadatos de paginación
         const totalPages = Math.ceil(totalDocs / limit);
-        logger.trace({file:'[BaseService].selectAll', docs, totalDocs, totalPages });
 
-        for (const doc of docs) {
-            logger.debug(`[BaseService] selectAll -> doc: ${JSON.stringify(doc)}`);
-        }
+        // Reemplaza el bucle por un resumen más eficiente y útil.
+        logger.trace({
+            file: '[BaseService].selectAll',
+            message: `Found ${docs.length} documents of ${totalDocs} total.`,
+            pagination: { page, limit, totalPages }
+        });
 
         // 5. Devolver objeto de paginación
         return {
