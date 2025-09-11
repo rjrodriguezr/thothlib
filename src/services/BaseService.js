@@ -24,37 +24,51 @@ class BaseService {
     }
 
     /**
+     * Construye el objeto de filtro base a partir del query, eliminando claves de control.
+     *
+     * @param {string | undefined | null} companyId - El ID de la compañía para filtrar.
+     * @param {object} query - El objeto de consulta original.
+     * @returns {object} El objeto de filtro para Mongoose.
+     * @private
+     */
+    _buildFilter(companyId, query) {
+        const filter = { ...query };
+        if (companyId) {
+            filter.company = companyId;
+        }
+        // Eliminar claves de control que no son parte del filtro del modelo
+        delete filter.fields;
+        delete filter.page;
+        delete filter.limit;
+        delete filter.sort;
+
+        return this._normalizeMatch(filter);
+    }
+
+    /**
      * Construye una consulta de Mongoose basada en los parámetros de filtrado y proyección.
      * Este método centraliza la lógica común para `selectAll` y `selectOne`.
      *
      * @param {string | undefined | null} companyId - El ID de la compañía para filtrar.
      * @param {object} query - El objeto de consulta original.
      * @param {string} methodName - El nombre del método de Mongoose a utilizar ('find' o 'findOne').
-     * @returns {mongoose.Query} La consulta de Mongoose construida.
+     * @returns {{query: mongoose.Query, filter: object}} Un objeto con la consulta de Mongoose y el filtro utilizado.
      * @private
      */
     _buildQuery(companyId, query, methodName) {
-        // Clona los parámetros del query para no mutar el objeto original
-        const match = { ...query };
-
-        if (companyId) {
-            match.company = companyId;
-        }
-
-        // Extrae 'fields' del query y lo elimina del objeto de filtros
-        const { fields } = match;
-        delete match.fields;
+        // Construye el filtro base
+        const filter = this._buildFilter(companyId, query);
 
         // Construye la consulta base usando el método especificado ('find' o 'findOne')
-        let sql = this.model[methodName](this._normalizeMatch(match));
+        let sql = this.model[methodName](filter);
 
         // Si hay campos específicos, aplica proyección
-        if (fields) {
-            const projection = fields.replace(/,/g, ' ');
+        if (query.fields) {
+            const projection = query.fields.replace(/,/g, ' ');
             sql = sql.select(projection);
         }
 
-        return sql;
+        return { query: sql, filter };
     }
 
     /**
@@ -89,20 +103,54 @@ class BaseService {
     }
 
     /**
-     * Obtiene uno o más documentos de la base de datos.
-     * Permite filtrar y seleccionar campos específicos (proyección).
+     * Obtiene una lista paginada de documentos de la base de datos.
+     * Permite filtrar, ordenar, paginar y seleccionar campos específicos (proyección).
      *
      * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
      * @param {object} query - Objeto de consulta que puede contener:
      * @param {object} query - ...filtros adicionales para la consulta de Mongoose (ej. `{ active: true }`).
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
-     * @returns {Promise<Array<object>>} Devuelve un array de objetos.
+     * @param {number} [query.page=1] - El número de página a recuperar.
+     * @param {number} [query.limit=10] - El número de documentos por página.
+     * @param {string} [query.sort='-createdAt'] - El campo y orden para ordenar (ej. 'name,-age').
+     * @returns {Promise<object>} Devuelve un objeto con los resultados paginados y metadatos.
      * @throws {Error} Lanza una excepción si ocurre un error durante la consulta a la base de datos.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectAll(companyId, query) {
-        const sql = this._buildQuery(companyId, query, 'find');
-        return sql.exec();
+        // 1. Opciones de paginación y ordenamiento
+        const page = parseInt(query.page, 10) || 1;
+        const limit = parseInt(query.limit, 10) || 10;
+        const skip = (page - 1) * limit;
+        const sortOrder = query.sort ? query.sort.replace(/,/g, ' ') : '-createdAt';
+
+        // 2. Construir la consulta principal y la de conteo
+        const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
+
+        // 3. Ejecutar consultas en paralelo para eficiencia
+        const [docs, totalDocs] = await Promise.all([
+            findQuery
+                .sort(sortOrder)
+                .skip(skip)
+                .limit(limit)
+                .lean() // Usar lean() para mejor rendimiento en consultas de solo lectura
+                .exec(),
+            this.model.countDocuments(filter)
+        ]);
+
+        // 4. Calcular metadatos de paginación
+        const totalPages = Math.ceil(totalDocs / limit);
+
+        // 5. Devolver objeto de paginación
+        return {
+            docs,
+            totalDocs,
+            limit,
+            page,
+            totalPages,
+            hasPrevPage: page > 1,
+            hasNextPage: page < totalPages,
+        };
     }
 
     /**
@@ -117,7 +165,7 @@ class BaseService {
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectOne(companyId, query) {
-        const sql = this._buildQuery(companyId, query, 'findOne');
+        const { query: sql } = this._buildQuery(companyId, query, 'findOne');
         return sql.exec();
     }
 
