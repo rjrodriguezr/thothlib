@@ -20,7 +20,6 @@ class BaseController {
         this.get = this._catchAsync(this.get.bind(this), 'fetching');
         this.delete = this._catchAsync(this.delete.bind(this), 'deleting');
         this.update = this._catchAsync(this.update.bind(this), 'updating');
-        this.echo = this._catchAsync(this.echo.bind(this), 'echoing');
     }
 
     /**
