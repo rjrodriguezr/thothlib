@@ -82,20 +82,19 @@ class BaseController {
      * De lo contrario, devuelve una lista paginada.
      */
     async get(req, res) {
-        const { companyId } = req.token;
-        const { _id } = req.params;
+        const companyId = req.token.companyId;
+        const queryParams = req.query;
 
-        if (_id) {
-            // Lógica para obtener un único recurso por ID
-            // Pasamos los query params para permitir proyección de campos (fields)
-            const query = { ...req.query, _id: _id };
-            const result = await this.service.selectOne(companyId, query);
-            res.status(200).json(result);
+        let result;
+        if (queryParams && Object.keys(queryParams).length > 0 && queryParams._id) {
+            // If there's an _id in the query, assume it's a selectOne operation
+            result = await this.service.selectOne(companyId, queryParams);
+
         } else {
-            // Lógica para obtener una lista de recursos
-            const result = await this.service.selectAll(companyId, req.query);
-            res.status(200).json(result);
+            // Otherwise, assume it's a selectAll operation
+            result = await this.service.selectAll(companyId, queryParams);
         }
+        res.status(200).json(result);
     }
 
     /**
