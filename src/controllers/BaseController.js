@@ -60,6 +60,7 @@ class BaseController {
         }
 
         logger.error(logMessage, error);
+        logger.debug(error.stack);
 
         // The service layer throws an error containing "not found" for 404 cases
         const isNotFound = error.message.toLowerCase().includes('not found');
@@ -116,20 +117,6 @@ class BaseController {
         const result = await this.service.update(companyId, username, _id, req.body);
         res.status(200).json(result);
     }
-
-    async echo(req, res) {
-        // authclient sube al request al request los datos del token {companyId, userId, username}
-        const { companyId, username, userId } = req.token;
-        logger.info({ companyId, username, userId });
-
-        if (req.method === "GET") {
-            res.json({ message: `GET ECHO: Dummy ok` });
-        } else {
-            res.json({ message: `POST ECHO: Dummy ok` });
-        }
-
-    }
-
 };
 
 module.exports = BaseController;
