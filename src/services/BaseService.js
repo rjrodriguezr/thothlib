@@ -6,6 +6,8 @@ class BaseService {
      */
     constructor(model) {
         this.model = model;
+        // Identifica si el servicio está manejando el modelo 'Company' para aplicar lógica especial.
+        this.isCompanyModel = this.model.modelName === 'Company';
     }
 
     /**
@@ -33,7 +35,7 @@ class BaseService {
      */
     _buildFilter(companyId, query) {
         const filter = { ...query }; // Clonar para no mutar el original
-        if (companyId) {
+        if (companyId && !this.isCompanyModel) {
             filter.company = companyId;
         }
 
@@ -140,7 +142,7 @@ class BaseService {
             modified_by: username
         };
 
-        if (companyId) {
+        if (companyId && !this.isCompanyModel) {
             payload.company = companyId;
         }
 
@@ -253,7 +255,7 @@ class BaseService {
     async delete(companyId, username, id) {
 
         const filter = { _id: id };
-        if (companyId) filter.company = companyId;
+        if (companyId && !this.isCompanyModel) filter.company = companyId;
 
         const doc = await this.model.findOne(filter);
         if (!doc) throw new Error(`${this.model.modelName} not found`);
@@ -282,7 +284,7 @@ class BaseService {
         const updates = { ...body };
 
         const filter = { _id: id };
-        if (companyId) {
+        if (companyId && !this.isCompanyModel) {
             filter.company = companyId;
         }
 
