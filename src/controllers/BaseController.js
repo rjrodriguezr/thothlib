@@ -1,7 +1,18 @@
 const logger = require('../../lib/logger');
+const BaseService = require('../services/BaseService');
 class BaseController {
 
-    constructor() {
+    /**
+     * Crea una instancia de BaseController.
+     * @param {mongoose.Model} model - El modelo de Mongoose para el cual este controlador manejará las operaciones CRUD.
+     */
+    constructor(model) {
+        if (!model) {
+            throw new Error('A Mongoose model must be provided to the BaseController constructor.');
+        }
+        this.service = new BaseService(model);
+        this.modelName = model.modelName;
+
         // Envolvemos los métodos públicos en el manejador de errores asíncrono.
         // Esto centraliza la gestión de excepciones y limpia los métodos del controlador.
         // Usamos .bind(this) para asegurar que 'this' dentro de los métodos siga siendo la instancia del controlador.
@@ -23,7 +34,7 @@ class BaseController {
         return (req, res) => {
             fn(req, res).catch(err => {
                 // Determina si hay un ID de recurso en los parámetros de la ruta
-                const resourceId = req.params.id || null;
+                const resourceId = req.params._id || null;
                 this._handleError(res, err, action, resourceId);
             });
         };
@@ -39,58 +50,72 @@ class BaseController {
      */
     _handleError(res, error, action, resourceId = null) {
         const resourceInfo = resourceId ? ` with id ${resourceId}` : '';
-        const logMessage = `Error ${action} resource${resourceInfo}`;
-        const clientMessage = `Error ${action} resource`;
+        const logMessage = `Error ${action} ${this.modelName}${resourceInfo}`;
+        const clientMessage = `Error ${action} ${this.modelName}`;
 
         // Manejo específico para métodos no implementados en clases hijas
         if (error.message.includes('not implemented')) {
-            logger.error(`Method for action '${action}' is not implemented in the derived controller.`, error);
+            logger.error(`Method for action '${action}' is not implemented in the derived controller for ${this.modelName}.`, error);
             return res.status(501).json({ message: `Functionality for '${action}' is not implemented.` });
         }
 
         logger.error(logMessage, error);
 
         // The service layer throws an error containing "not found" for 404 cases
-        const isNotFound = error.message.includes('not found');
+        const isNotFound = error.message.toLowerCase().includes('not found');
         const statusCode = isNotFound ? 404 : 500;
 
         res.status(statusCode).json({ message: clientMessage, error: error.message });
     }
 
     /**
-     * Inserta un nuevo recurso. Este método debe ser sobreescrito por la clase hija.
-     * La lógica de negocio se inyecta en la implementación de la clase derivada.
+     * Inserta un nuevo recurso utilizando el servicio base.
      */
     async insert(req, res) {
-        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
-        throw new Error('Method "insert" not implemented.');
+        const { companyId, username } = req.token;
+        const newObject = await this.service.insert(companyId, username, req.body);
+        res.status(201).json(newObject);
     }
 
     /**
-     * Obtiene recursos. Este método debe ser sobreescrito por la clase hija.
-     * La lógica de negocio se inyecta en la implementación de la clase derivada.
+     * Obtiene recursos. Si se proporciona un ID en la ruta, busca un único documento.
+     * De lo contrario, devuelve una lista paginada.
      */
     async get(req, res) {
-        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
-        throw new Error('Method "get" not implemented.');
+        const { companyId } = req.token;
+        const { _id } = req.params;
+
+        if (_id) {
+            // Lógica para obtener un único recurso por ID
+            // Pasamos los query params para permitir proyección de campos (fields)
+            const query = { ...req.query, _id: _id };
+            const result = await this.service.selectOne(companyId, query);
+            res.status(200).json(result);
+        } else {
+            // Lógica para obtener una lista de recursos
+            const result = await this.service.selectAll(companyId, req.query);
+            res.status(200).json(result);
+        }
     }
 
     /**
-     * Elimina un recurso. Este método debe ser sobreescrito por la clase hija.
-     * La lógica de negocio se inyecta en la implementación de la clase derivada.
+     * Realiza un borrado lógico (soft delete) de un recurso.
      */
     async delete(req, res) {
-        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
-        throw new Error('Method "delete" not implemented.');
+        const { companyId, username } = req.token;
+        const { _id } = req.params;
+        const result = await this.service.delete(companyId, username, _id);
+        res.status(200).json(result);
     }
 
     /**
-     * Actualiza un recurso. Este método debe ser sobreescrito por la clase hija.
-     * La lógica de negocio se inyecta en la implementación de la clase derivada.
+     * Actualiza un recurso existente.
      */
     async update(req, res) {
-        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
-        throw new Error('Method "update" not implemented.');
+        const { companyId, username } = req.token;
+        const { _id } = req.params;
+        const result = await this.service.update(companyId, username, _id, req.body);
+        res.status(200).json(result);
     }
 
     async echo(req, res) {
