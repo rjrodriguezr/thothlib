@@ -1,263 +1,107 @@
 const logger = require('../../lib/logger');
-const redisService = require('../../lib/redisService');
-
-/**
- * BaseController
- * 
- * Clase base genérica para controladores CRUD sobre modelos de Mongoose.
- * Permite extender funcionalidades comunes como operaciones de inserción, actualización, eliminación y búsqueda.
- * 
- * Puede configurarse para que ciertas operaciones filtren automáticamente por el `company` asociado,
- * dependiendo de si la entidad debe estar ligada a una empresa (ej.: Productos) o ser global (ej.: Configuraciones generales).
- */
 class BaseController {
+
+    constructor() {
+        // Envolvemos los métodos públicos en el manejador de errores asíncrono.
+        // Esto centraliza la gestión de excepciones y limpia los métodos del controlador.
+        // Usamos .bind(this) para asegurar que 'this' dentro de los métodos siga siendo la instancia del controlador.
+        this.insert = this._catchAsync(this.insert.bind(this), 'inserting');
+        this.get = this._catchAsync(this.get.bind(this), 'fetching');
+        this.delete = this._catchAsync(this.delete.bind(this), 'deleting');
+        this.update = this._catchAsync(this.update.bind(this), 'updating');
+        this.echo = this._catchAsync(this.echo.bind(this), 'echoing');
+    }
+
     /**
-     * Constructor de la clase BaseController
-     * 
-     * @param {mongoose.Model} model - El modelo de Mongoose que representa la colección a manipular.
-     * 
-     * Ejemplo de uso:
-     *    const userController = new BaseController(UserModel, true); // Para usuarios ligados a un company
-     *    const configController = new BaseController(ConfigModel, false); // Para configuraciones globales
+     * Envuelve una función asíncrona de controlador para capturar errores y pasarlos al manejador de errores centralizado.
+     * @param {Function} fn - La función asíncrona del controlador a envolver.
+     * @param {string} action - La acción que se está realizando (ej. 'inserting', 'deleting').
+     * @returns {Function} Una nueva función que maneja la lógica de try/catch.
+     * @private
      */
-    constructor(model) {
-        this.model = model;
-    }
-
-    async handleError(res, err, message) {
-        logger.error(err);
-        let cause = `Caused by: ${err.errorResponse?.errmsg || err.message}`;
-        let msg = message ? `${message}. ${cause}` : cause;
-        res.status(500).json({ message: msg });
-    }
-
-    _normalizeMatch(match) {
-        for (let key in match) {
-            if (match[key] === 'true') match[key] = true;
-            if (match[key] === 'false') match[key] = false;
-        }
-        return match;
+    _catchAsync(fn, action) {
+        return (req, res) => {
+            fn(req, res).catch(err => {
+                // Determina si hay un ID de recurso en los parámetros de la ruta
+                const resourceId = req.params.id || null;
+                this._handleError(res, err, action, resourceId);
+            });
+        };
     }
 
     /**
-     * @function insert
-     * @description Inserta un nuevo documento en la base de datos.
-     * Utiliza el modelo especificado para crear un nuevo registro con los datos enviados
-     * en el cuerpo del request (`req.body`).
-     *
-     * @param {Object} req - Objeto de solicitud HTTP (Express).
-     * @param {Object} res - Objeto de respuesta HTTP (Express).
-     *
-     * @returns {void} Responde con el documento creado o un error si ocurre.
+     * Centralized error handler for the controller.
+     * @param {object} res - The Express response object.
+     * @param {Error} error - The error object caught.
+     * @param {string} action - The action being performed (e.g., 'inserting', 'updating').
+     * @param {string|null} [resourceId=null] - The ID of the resource, if applicable.
+     * @private
+     */
+    _handleError(res, error, action, resourceId = null) {
+        const resourceInfo = resourceId ? ` with id ${resourceId}` : '';
+        const logMessage = `Error ${action} resource${resourceInfo}`;
+        const clientMessage = `Error ${action} resource`;
+
+        // Manejo específico para métodos no implementados en clases hijas
+        if (error.message.includes('not implemented')) {
+            logger.error(`Method for action '${action}' is not implemented in the derived controller.`, error);
+            return res.status(501).json({ message: `Functionality for '${action}' is not implemented.` });
+        }
+
+        logger.error(logMessage, error);
+
+        // The service layer throws an error containing "not found" for 404 cases
+        const isNotFound = error.message.includes('not found');
+        const statusCode = isNotFound ? 404 : 500;
+
+        res.status(statusCode).json({ message: clientMessage, error: error.message });
+    }
+
+    /**
+     * Inserta un nuevo recurso. Este método debe ser sobreescrito por la clase hija.
+     * La lógica de negocio se inyecta en la implementación de la clase derivada.
      */
     async insert(req, res) {
-        // authclient sube al request al request los datos del token {companyId, userId, username}
-        if (!req.token) {
-            return res.status(401).json({ message: "Token de autenticación no proporcionado." });
-        }
-
-        const { companyId, username } = req.token;
-
-        if (!username) return res.status(401).json({ message: "username no proporcionado en el token de autenticación." });
-
-        const payload = {
-            ...req.body,
-            created_by: username,
-            modified_by: username
-        };
-
-        // CompanyId siempre debe agregarse a menos que no se requiera de forma explicita mediante la inyeccion del del atributo NotRequireCompanyFilter
-        // entonces si no existe en el request -> !false -> true y se agrega companyId en el filtro
-        // y si existe en el request -> !true -> false -> no se va a incluir companyId en el filtro
-        if (!req.NotRequireCompanyFilter) {
-            payload.company = companyId;
-        }
-
-        const doc = new this.model(payload);
-
-        doc.save()
-            .then(saved => {
-                res.json({ status: 'saved', _id: saved._id })
-            })
-            // 🔥 Cambiado a función flecha para mantener el ambito donde fue creada y no de error con el this              
-            .catch(err => {
-                this.handleError(res, err, `${this.model.modelName} not created`);
-            });
+        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
+        throw new Error('Method "insert" not implemented.');
     }
 
     /**
-     * @function get
-     * @description Maneja una solicitud GET para obtener elementos desde la base de datos.
-     * Retorna directamente una lista (array) con los resultados encontrados según los parámetros
-     * enviados en la query del request.
-     *
-     * @param {Object} req - Objeto de solicitud HTTP (Express). Contiene la query con filtros.
-     * @param {Object} res - Objeto de respuesta HTTP (Express). Usado para enviar la respuesta al cliente.
-     *
-     * @returns {void} Responde al cliente con un array JSON de los resultados o con un error si ocurre.
+     * Obtiene recursos. Este método debe ser sobreescrito por la clase hija.
+     * La lógica de negocio se inyecta en la implementación de la clase derivada.
      */
     async get(req, res) {
-        // Clona los parámetros del query
-        let query = { ...req.query };
-
-        // CompanyId siempre debe agregarse a menos que no se requiera de forma explicita mediante la inyeccion del del atributo NotRequireCompanyFilter
-        // entonces si no existe en el request -> !false -> true y se agrega companyId en el filtro
-        // y si existe en el request -> !true -> false -> no se va a incluir companyId en el filtro
-        if (!req.NotRequireCompanyFilter) {
-            // authclient sube al request al request los datos del token {companyId, userId, username}
-            if (!req.token) {
-                return res.status(401).json({ message: "Token de autenticación no proporcionado." });
-            }
-            const { companyId } = req.token;
-            query.company = companyId;
-        }
-
-        // Extrae 'fields' del query y lo elimina del objeto de filtros
-        const { fields, redisKey } = query;
-        delete query.fields;
-        delete query.redisKey;
-
-        // Determinar si estamos buscando un elemento específico por ID
-        const isSingleItemQuery = query._id !== undefined;
-
-        // Construye la consulta
-        let sql = this.model.find(this._normalizeMatch(query));
-
-        // Si hay campos específicos, aplica proyección
-        if (fields) {
-            const projection = fields.replace(/,/g, ' ');
-            sql = sql.select(projection);
-        }
-
-        // Ejecuta la consulta
-        sql.exec()
-            .then(result => {
-                // sólo almacenar en redis los datos del select que no devuelven un valor unico
-                if (isSingleItemQuery && result.length === 1) {
-                    res.json(result[0]);
-                } else {
-                    // Si se proporcionó una rediskey y el resultado es válido, guardar en Redis
-                    if (redisKey && result) {
-                        // Ejecutar en segundo plano (fire-and-forget) sin esperar para no bloquear la respuesta.
-                        redisService.setData(redisKey, result, ['EX', 3600])
-                            .then(() => logger.trace(`Resultado para la clave '${redisKey}' cacheado en Redis.`))
-                            .catch(redisErr => logger.error(`Error al cachear el resultado en Redis para la clave '${redisKey}':`, redisErr));
-                    }
-                    // Responder de inmediato al cliente.
-                    res.json(result);
-                }
-            })
-            .catch(err => {
-                this.handleError(res, err, `${this.model.modelName} not found`);
-            });
+        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
+        throw new Error('Method "get" not implemented.');
     }
 
     /**
-     * @function delete
-     * @description Desactiva lógicamente un documento (soft delete) usando _id y company como filtro.
-     * Utiliza .save() para asegurar que se disparen los hooks definidos como pre('save').
-     *
-     * @param {Object} req - Objeto de solicitud HTTP (Express).
-     * @param {Object} res - Objeto de respuesta HTTP (Express).
-     *
-     * @returns {void} Responde con el documento actualizado o un error.
+     * Elimina un recurso. Este método debe ser sobreescrito por la clase hija.
+     * La lógica de negocio se inyecta en la implementación de la clase derivada.
      */
     async delete(req, res) {
-        // authclient sube al request al request los datos del token {companyId, userId, username}
-        if (!req.token) {
-            return res.status(401).json({ message: "Token de autenticación no proporcionado." });
-        }
-        const { id } = req.params;
-        const { companyId, username } = req.token;
-
-
-        // Construye el filtro para asegurarnos que el usuario elimina un registro para la company a la que pertence
-        const filter = { _id: id };
-
-        // CompanyId siempre debe agregarse a menos que no se requiera de forma explicita mediante la inyeccion del del atributo NotRequireCompanyFilter
-        // entonces si no existe en el request -> !false -> true y se agrega companyId en el filtro
-        // y si existe en el request -> !true -> false -> no se va a incluir companyId en el filtro
-        if (!req.NotRequireCompanyFilter) {
-            filter.company = companyId;
-        }
-
-        try {
-            const doc = await this.model.findOne(filter);
-            if (!doc) {
-                return res.status(404).json({ message: `${this.model.modelName} not found` });
-            }
-
-            doc.active = false;
-            doc.modified_by = username;
-            const saved = await doc.save(); // Dispara los hooks
-            logger.info({ status: 'deleted', deleted: saved._id });
-            res.json({ status: 'deleted', deleted: saved._id });
-        } catch (err) {
-            this.handleError(res, err, `${this.model.modelName} not deleted`);
-        }
+        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
+        throw new Error('Method "delete" not implemented.');
     }
 
     /**
-     * @function update
-     * @description Actualiza un documento usando _id y company como filtro.
-     * Utiliza .save() para asegurar ejecución de pre('save') hooks.
-     *
-     * @param {Object} req - Objeto de solicitud HTTP (Express).
-     * @param {Object} res - Objeto de respuesta HTTP (Express).
-     *
-     * @returns {void} Responde con el documento actualizado o un error.
+     * Actualiza un recurso. Este método debe ser sobreescrito por la clase hija.
+     * La lógica de negocio se inyecta en la implementación de la clase derivada.
      */
     async update(req, res) {
-        // authclient sube al request al request los datos del token {companyId, userId, username}
-        if (!req.token) {
-            return res.status(401).json({ message: "Token de autenticación no proporcionado." });
-        }
-        const { id } = req.params;
-        // authclient sube al request al request los datos del token {companyId, userId, username}
-        const { companyId, username } = req.token;
-        const updates = { ...req.body };
-
-        const filter = { _id: id };
-        // CompanyId siempre debe agregarse a menos que no se requiera de forma explicita mediante la inyeccion del del atributo NotRequireCompanyFilter
-        // entonces si no existe en el request -> !false -> true y se agrega companyId en el filtro
-        // y si existe en el request -> !true -> false -> no se va a incluir companyId en el filtro
-        if (!req.NotRequireCompanyFilter) {
-            filter.company = companyId;
-        }
-
-        try {
-            const doc = await this.model.findOne(filter);
-            if (!doc) {
-                return res.status(404).json({ message: `${this.model.modelName} not found` });
-            }
-
-            // Actualizar propiedades dinámicamente
-            Object.assign(doc, updates);
-            doc.modified_by = username;
-
-            const saved = await doc.save(); // Dispara hooks como pre('save')
-            logger.info({ status: 'updated', updated: saved._id });
-            res.json({ status: 'updated', updated: saved._id });
-        } catch (err) {
-            this.handleError(res, err, `${this.model.modelName} not updated`);
-        }
+        // LOGICA DE NEGOCIO (a ser implementada por la clase hija)
+        throw new Error('Method "update" not implemented.');
     }
 
     async echo(req, res) {
         // authclient sube al request al request los datos del token {companyId, userId, username}
         const { companyId, username, userId } = req.token;
         logger.info({ companyId, username, userId });
-        try {
-            if (req.method === "GET") {
-                res.json({ message: `GET ECHO: Dummy ok` });
-            } else {
-                res.json({ message: `POST ECHO: Dummy ok` });
-            }
-        } catch (error) {
-            logger.error(error.stack)
-            return res.status(500).json({
-                error: error.message
-            })
+
+        if (req.method === "GET") {
+            res.json({ message: `GET ECHO: Dummy ok` });
+        } else {
+            res.json({ message: `POST ECHO: Dummy ok` });
         }
 
     }
