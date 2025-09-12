@@ -113,6 +113,9 @@ const UserSchema = new Schema({
             default: null
         }
     }
+}, {
+    // Opción personalizada para que BaseService no use .lean() y permita la futura aplicación de getters para encriptación.
+    useLean: false
 });
 
 // Aplicar plugin de auditoría (campos: active, created_at, modified_at, modified_by)

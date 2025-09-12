@@ -177,14 +177,25 @@ class BaseService {
         // 2. Construir la consulta principal y la de conteo
         const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
 
+        // Decide si usar .lean() basado en una opción personalizada del esquema.
+        // Por defecto se usa .lean() para mejor rendimiento.
+        // Modelos como Customer y User pueden desactivarlo con `useLean: false` en sus opciones de esquema
+        // para asegurar que los getters (ej. desencriptación) se apliquen.
+        const schemaOptions = this.model.schema.options || {};
+        const shouldUseLean = schemaOptions.useLean !== false;
+
+        let queryToExecute = findQuery
+            .sort(sortOrder)
+            .skip(skip)
+            .limit(limit);
+
+        if (shouldUseLean) {
+            queryToExecute = queryToExecute.lean();
+        }
+
         // 3. Ejecutar consultas en paralelo para eficiencia
         const [docs, totalDocs] = await Promise.all([
-            findQuery
-                .sort(sortOrder)
-                .skip(skip)
-                .limit(limit)
-                .lean() // Usar lean() para mejor rendimiento en consultas de solo lectura
-                .exec(),
+            queryToExecute.exec(),
             this.model.countDocuments(filter)
         ]);
 
@@ -217,7 +228,7 @@ class BaseService {
      * @param {string | undefined | null} companyId - El ID de la compañía para filtrar los resultados. Si es `undefined` o `null`, no se aplica filtro por compañía.
      * @param {object} query - Objeto de consulta con los filtros para encontrar el documento (ej. `{ email: 'test@test.com' }`).
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
-     * @returns {Promise<object>} Devuelve el documento que coincida con la consulta, o una nueva instancia vacía del modelo si no se encuentra ninguno.
+     * @returns {Promise<object|null>} Devuelve el documento que coincida con la consulta, o `null` si no se encuentra ninguno.
      * @throws {Error} Lanza una excepción si ocurre un error en la base de datos.
      * El llamador es responsable de capturar y manejar esta excepción.
      */

@@ -61,7 +61,8 @@ const CustomerSchema = Schema({
 }, {
     // Asegúrate de que los getters se apliquen al convertir a objeto/JSON
     toObject: { getters: true, virtuals: true },
-    toJSON: { getters: true, virtuals: true }
+    toJSON: { getters: true, virtuals: true },
+    useLean: false // Opción personalizada para que BaseService no use .lean() y aplique los getters.
 });
 
 // Middleware Pre-Save para generar hashes
