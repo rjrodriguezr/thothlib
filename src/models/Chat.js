@@ -1,7 +1,6 @@
 const { Schema, model } = require('mongoose');
-const { middlewares, constants } = require('thothlib');
-const { modelAuditPlugin } = middlewares;
-const { channelSource } = constants;
+const { channelSource } = require('thothconst');
+const { modelAuditPlugin } = require('../middlewares');
 
 const ChatSchema = new Schema({
     // Referencia a la empresa para sistemas multi-tenant

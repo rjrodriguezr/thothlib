@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
-const { modelAuditPlugin } = require('../middlewares');
 const { campaignStatuses } = require('thothconst');
+const { modelAuditPlugin } = require('../middlewares');
 
 const CampaignSchema = new Schema({
     /**

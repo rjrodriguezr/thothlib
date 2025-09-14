@@ -1,7 +1,6 @@
 const { Schema, model } = require('mongoose');
-const { middlewares, constants } = require('thothlib');
-const { modelAuditPlugin } = middlewares;
-const { conversationStatus } = constants;
+const { modelAuditPlugin } = require('../middlewares');
+const { conversationStatus } = require('thothconst');
 
 const ConversationSchema = new Schema({
     // Vínculo al Chat padre (la relación permanente)
