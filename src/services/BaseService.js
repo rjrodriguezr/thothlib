@@ -47,6 +47,7 @@ class BaseService {
         delete filter.page;
         delete filter.limit;
         delete filter.sort;
+        delete filter.populate; // Eliminar clave de populate para que no sea parte del filtro
         delete filter.search; // Importante eliminar 'search' para que no sea tratado como un campo de filtro
 
         const baseFilter = this._normalizeMatch(filter);
@@ -119,6 +120,40 @@ class BaseService {
         }
         sql = sql.select(projection);
 
+        // --- Lógica para POPULATE (Poblar Referencias) ---
+        // Esta sección permite poblar campos de referencia de Mongoose (ObjectId refs)
+        // con los datos del documento referenciado, directamente desde la consulta.
+        if (query.populate) {
+            // El parámetro `populate` en la URL debe seguir un formato específico:
+            // - Para una sola referencia: `?populate=path:campo1,campo2`
+            //   Ejemplo: `?populate=template:name,status`
+            // - Para múltiples referencias, se separan con `|`:
+            //   Ejemplo: `?populate=template:name|created_by:username,email`
+            //
+            // 1. Separar cada instrucción de populate.
+            // "template:name,status|user:username" -> ["template:name,status", "user:username"]
+            const populateInstructions = query.populate.split('|');
+
+            populateInstructions.forEach(instruction => {
+                // 2. Separar el path de los campos a seleccionar.
+                // "template:name,status" -> ["template", "name,status"]
+                const parts = instruction.split(':');
+                const path = parts[0];
+                // 3. Preparar la cadena de selección de campos. Mongoose espera un string separado por espacios.
+                // "name,status" -> "name status"
+                const select = parts[1] ? parts[1].replace(/,/g, ' ') : '';
+
+                // 4. Construir el objeto de opciones para el método .populate() de Mongoose.
+                // Si `select` está vacío, se traerá el documento completo.
+                // Si `select` tiene campos, solo se traerán esos campos (además del _id).
+                const populateOptions = { path };
+                if (select) {
+                    populateOptions.select = select;
+                }
+                // 5. Aplicar la instrucción de populate a la consulta.
+                sql = sql.populate(populateOptions);
+            });
+        }
         return { query: sql, filter };
     }
 
@@ -235,9 +270,20 @@ class BaseService {
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectOne(companyId, query) {
-        const { query: sql } = this._buildQuery(companyId, query, 'findOne');
-        //const result = await sql.exec();
-        return await sql.exec();
+        const { query: findOneQuery } = this._buildQuery(companyId, query, 'findOne');
+
+        // Decide si usar .lean() basado en una opción personalizada del esquema.
+        const schemaOptions = this.model.schema.options || {};
+        const shouldUseLean = schemaOptions.useLean !== false;
+
+        let queryToExecute = findOneQuery;
+
+        if (shouldUseLean) {
+            queryToExecute = queryToExecute.lean();
+        }
+
+        const result = await queryToExecute.exec();
+        return result;
     }
 
     /**

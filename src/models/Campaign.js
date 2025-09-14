@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
-const { campaignStatuses } = requiere('thothconst');
+const { campaignStatuses } = require('thothconst');
 
 const CampaignSchema = new Schema({
     /**
@@ -75,4 +75,4 @@ CampaignSchema.index({ status: 1, scheduled_at: 1 });
 // Aplica el plugin de auditoría para rastrear marcas de tiempo y usuarios de creación/actualización.
 CampaignSchema.plugin(modelAuditPlugin);
 
-export const Campaign = model('Campaign', CampaignSchema);
+module.exports = model('Campaign', CampaignSchema);
