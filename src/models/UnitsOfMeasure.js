@@ -44,4 +44,4 @@ UnitsOfMeasureSchema.plugin(modelAuditPlugin);
 UnitsOfMeasureSchema.index({ category: 1 });
 UnitsOfMeasureSchema.index({ baseUnit: 1 });
 
-module.exports = model('UnitOfMeasure', UnitsOfMeasureSchema, "units_of_measure");
+module.exports = model('UnitsOfMeasure', UnitsOfMeasureSchema, "units_of_measure");

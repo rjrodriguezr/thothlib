@@ -27,7 +27,7 @@ const ProductSchema = Schema({
     // Unidad de medida del producto
     unit_of_measure: {
         type: Schema.Types.ObjectId,
-        ref: 'UnitOfMeasure',
+        ref: 'UnitsOfMeasure',
         required: [true, 'Unit of measure is required']
     },
     // ProductCategory principal obligatorio
