@@ -1,0 +1,78 @@
+const { Schema, model } = require('mongoose');
+const { modelAuditPlugin } = require('../middlewares');
+const { campaignStatuses } = requiere('thothconst');
+
+const CampaignSchema = new Schema({
+    /**
+     * Nombre o identificador interno de la campaña.
+     */
+    name: {
+        type: String,
+        required: [true, 'El nombre de la campaña es obligatorio.'],
+        trim: true,
+    },
+
+    /**
+     * Referencia al template de WAP que será utilizado.
+     */
+    template: {
+        type: Schema.Types.ObjectId,
+        ref: 'WapTemplate',
+        required: [true, 'Se requiere una plantilla para la campaña.'],
+    },
+
+    /**
+     * Estado del ciclo de vida de la campaña. Es el campo principal
+     * para los workers que procesan los envíos.
+     */
+    status: {
+        type: String,
+        enum: Object.values(campaignStatuses),
+        default: campaignStatuses.DRAFT,
+    },
+
+    /**
+     * Fecha y hora programada para iniciar el envío.
+     */
+    scheduled_at: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: (v) => v > new Date(),
+            message: 'La fecha de inicio debe ser en el futuro.'
+        }
+    },
+
+    /**
+     * Timestamps para el seguimiento del procesamiento.
+     */
+    started_at: { type: Date },
+    completed_at: { type: Date },
+
+    /**
+     * Objeto desnormalizado para estadísticas agregadas. Estos contadores
+     * se actualizan a través de la lógica de la aplicación a medida que
+     * los documentos en la colección 'Messages' cambian de estado.
+     */
+    stats: {
+        total: { type: Number, default: 0 },
+        sent: { type: Number, default: 0 },
+        delivered: { type: Number, default: 0 }, // Añadido para mayor granularidad
+        read: { type: Number, default: 0 },
+        failed: { type: Number, default: 0 },
+    }
+}, {    
+    minimize: false,
+});
+
+/**
+ * **ÍNDICES PARA OPTIMIZAR CONSULTAS (PERFORMANCE)**
+ * Un índice en status y scheduled_at es crucial para que un worker
+ * encuentre eficientemente las campañas que debe procesar.
+ */
+CampaignSchema.index({ status: 1, scheduled_at: 1 });
+
+// Aplica el plugin de auditoría para rastrear marcas de tiempo y usuarios de creación/actualización.
+CampaignSchema.plugin(modelAuditPlugin);
+
+export const Campaign = model('Campaign', CampaignSchema);

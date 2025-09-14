@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
-const { rol } = require("../../lib/constants");
+const { rol } = require("thothconst");
 const bcrypt = require('bcrypt');
 const logger = require('../../lib/logger');
 

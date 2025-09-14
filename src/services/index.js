@@ -1,8 +1,8 @@
 const BaseService = require('./BaseService');
-const CompanyService = require('./companyService');
+const CompanyService = require('./CompanyService');
 const logger = require('../../lib/logger');
 const redisService = require('../../lib/redisService');
-const constants = require('../../lib/constants');
+const constants = require('thothconst');
 const { Company } = require('../models');
 
 // Se crea una única instancia del servicio con sus dependencias.

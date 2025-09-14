@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
-const { deliveryType, contentType, senderType } = require('../../lib/constants');
+const { deliveryType, contentType, senderType } = require('thothconst');
 
 const MessageSchema = new Schema({
     // Referencia al chat padre

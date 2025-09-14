@@ -1,5 +1,5 @@
 const logger = require('../../lib/logger');
-const { headers, WEBHOOK_SOURCE_TYPE } = require('../../lib/constants');
+const { headers, WEBHOOK_SOURCE_TYPE } = require('thothconst');
 /**
  * @module authClient
  * @description Middleware de Express para autenticar y autorizar peticiones internas entre servicios.
