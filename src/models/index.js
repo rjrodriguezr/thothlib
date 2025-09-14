@@ -4,6 +4,9 @@ const Company  = require('./Company');
 const Conversation  = require('./Conversation');
 const Customer  = require('./Customer');
 const Message  = require('./Message');
+const Product  = require('./Product');
+const ProductCategory  = require('./ProductCategory');
+const UnitOfMeasure  = require('./UnitsOfMeasure');
 const User  = require('./User');
 const WapTemplate  = require('./WapTemplate');
 
@@ -14,6 +17,9 @@ module.exports = {
     Conversation,
     Customer,
     Message,
+    Product,
+    ProductCategory,
+    UnitOfMeasure,
     User,
     WapTemplate,
 };
