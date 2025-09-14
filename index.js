@@ -24,7 +24,6 @@ try {
 module.exports = {
   // Libs
   axiosClient,
-  catalog,
   constants,
   crypt,
   logger,
