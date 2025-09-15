@@ -96,11 +96,12 @@ class BaseService {
      * @param {object} query - El objeto de consulta original.
      * @param {string} methodName - El nombre del método de Mongoose a utilizar ('find' o 'findOne').
      * @returns {{query: mongoose.Query, filter: object}} Un objeto con la consulta de Mongoose y el filtro utilizado.
+     * @param {object} [prebuiltFilter=null] - Un filtro opcional pre-construido. Si se proporciona, se usa en lugar de construir uno nuevo.
      * @private
      */
-    _buildQuery(query, methodName) {
-        // Construye el filtro base
-        const filter = this._buildFilter(query);
+    _buildQuery(query, methodName, prebuiltFilter = null) {
+        // Usa el filtro pre-construido si se proporciona; de lo contrario, construye uno.
+        const filter = prebuiltFilter || this._buildFilter(query);
 
         // Construye la consulta base usando el método especificado ('find' o 'findOne')
         let sql = this.model[methodName](filter);
