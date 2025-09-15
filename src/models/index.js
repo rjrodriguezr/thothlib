@@ -6,7 +6,7 @@ const Customer  = require('./Customer');
 const Message  = require('./Message');
 const Product  = require('./Product');
 const ProductCategory  = require('./ProductCategory');
-const UnitOfMeasure  = require('./UnitsOfMeasure');
+const UnitsOfMeasure  = require('./UnitsOfMeasure');
 const User  = require('./User');
 const WapTemplate  = require('./WapTemplate');
 
@@ -19,7 +19,7 @@ module.exports = {
     Message,
     Product,
     ProductCategory,
-    UnitOfMeasure,
+    UnitsOfMeasure,
     User,
     WapTemplate,
 };
