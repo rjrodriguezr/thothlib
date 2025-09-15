@@ -1,23 +1,22 @@
-class CompanyService {
-  #logger;
-  #redisService;
-  #constants;
-  #CompanyModel;
+const GlobalService = require("./GlobalService");
+const logger = require('../../lib/logger');
+const redisService = require('../../lib/redisService');
+const constants = require('thothconst');
+const { Company } = require('../models');
+
+class CompanyService extends GlobalService{
 
   // #region [constructor]
-  constructor({ logger, redisService, constants, Company }) {
-    this.#logger = logger;
-    this.#redisService = redisService;
-    this.#constants = constants;
-    this.#CompanyModel = Company;
+  constructor() {
+    super(Company);
   }
   //#endregion
 
   // #region [regis management]
   async #saveMainCompanySettings(companyId, systemSettings, companyName) {
-    const redisKey = `${this.#constants.redisKeyPrefix.COMPANY_SETTINGS}:${companyId}`;
-    await this.#redisService.setData(redisKey, systemSettings);
-    this.#logger.trace({ message: `Configuración principal de la empresa ${companyName} (${companyId}) guardada en Redis`, redisKey });
+    const redisKey = `${constants.redisKeyPrefix.COMPANY_SETTINGS}:${companyId}`;
+    await redisService.setData(redisKey, systemSettings);
+    logger.trace({ message: `Configuración principal de la empresa ${companyName} (${companyId}) guardada en Redis`, redisKey });
   }
 
   /**
@@ -33,7 +32,7 @@ class CompanyService {
     // Se asegura que el objeto `company` y sus propiedades críticas (_id, system_settings) existan.
     // Esto previene errores en los pasos siguientes y proporciona un mensaje de error claro.
     if (!company || !company._id || !company.system_settings) {
-      this.#logger.error({
+      logger.error({
         message: 'Objeto `company` inválido o faltan `_id` o `system_settings`.',
         companyDetails: { id: company?._id, hasSettings: !!company?.system_settings }
       });
@@ -52,11 +51,11 @@ class CompanyService {
       // Esto permite recuperar toda la configuración de una empresa con una sola consulta a Redis.
       await this.#saveMainCompanySettings(companyId, systemSettings, companyName);
 
-      this.#logger.trace({ message: `Configuración de la empresa ${companyName} guardada en Redis`, companyId });
+      logger.trace({ message: `Configuración de la empresa ${companyName} guardada en Redis`, companyId });
     } catch (error) {
       // --- 5. Manejo de Errores Generales ---
       // Captura errores del guardado principal o cualquier otro error no capturado en el bucle.
-      this.#logger.error({
+      logger.error({
         message: `Error general al guardar datos de la empresa ${companyName} en Redis`,
         companyId,
         errorMessage: error.message,
@@ -79,43 +78,43 @@ class CompanyService {
    * @returns {Promise<object|null>} The system_settings object, or null if not found.
    */
   async getSystemSettings(companyId) {
-    const redisKey = `${this.#constants.redisKeyPrefix.COMPANY_SETTINGS}:${companyId}`;
+    const redisKey = `${constants.redisKeyPrefix.COMPANY_SETTINGS}:${companyId}`;
 
     try {
       if (!companyId) {
         throw new Error('companyId is required');
       }
       // 1. Try to get from Redis first
-      const cachedSettings = await this.#redisService.getData(redisKey);
+      const cachedSettings = await redisService.getData(redisKey);
       if (cachedSettings) {
-        this.#logger.trace({ message: `Cache HIT for company settings`, companyId, redisKey });
+        logger.trace({ message: `Cache HIT for company settings`, companyId, redisKey });
         // The service stores objects, so no need to parse unless it's configured differently
         return cachedSettings;
       }
 
-      this.#logger.trace({ message: `Cache MISS for company settings. Fetching from DB to repopulate.`, companyId });
+      logger.trace({ message: `Cache MISS for company settings. Fetching from DB to repopulate.`, companyId });
 
       // 2. If not in cache, get the full company object from DB
       // We need `_id`, `name`, and `system_settings` for `saveSettingInRedis`
-      const company = await this.#CompanyModel.findOne(
+      const company = await Company.findOne(
         { _id: companyId, active: true },
         { name: 1, system_settings: 1 } // Select fields needed by saveSettingInRedis
       ).lean();
 
       if (!company || !company.system_settings) {
-        this.#logger.warn({ message: `Company or its settings not found in DB`, companyId });
+        logger.warn({ message: `Company or its settings not found in DB`, companyId });
         return null; // Not found
       }
 
       // 3. Populate cache for next time by calling the main save method.
       // This will save the main settings.
       await this.saveSettingInRedis(company);
-      this.#logger.info({ message: `Cache fully repopulated for company`, companyId });
+      logger.info({ message: `Cache fully repopulated for company`, companyId });
 
       return company.system_settings;
 
     } catch (error) {
-      this.#logger.error({
+      logger.error({
         message: `Error in getSystemSettings for company`,
         companyId,
         errorMessage: error.message,
@@ -127,4 +126,7 @@ class CompanyService {
   }
 }
 
-module.exports = CompanyService;
+module.exports = {
+  CompanyService, // Exporta la clase para poder heredar de ella
+  companyService: new CompanyService(), // Exporta una instancia para uso directo
+};

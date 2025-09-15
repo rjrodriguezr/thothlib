@@ -123,8 +123,9 @@ CompanySchema.post('findOneAndUpdate', async function (doc) {
     try {
       const { companyService } = require('../services');
       await companyService.saveSettingInRedis(doc);
-    } catch (error) {
-      logger.error('Error al actualizar configuración en Redis tras "findOneAndUpdate":', error);
+    } catch (error) {      
+      logger.error('Error al actualizar configuración en Redis tras "findOneAndUpdate":', error.message);
+      logger.debug(error.stack);
     }
   }
 });
@@ -145,7 +146,8 @@ CompanySchema.post('save', async function (doc) {
     const { companyService } = require('../services');
     await companyService.saveSettingInRedis(doc);
   } catch (error) {
-    logger.error('Error al guardar configuración en Redis:', error);
+    logger.error('Error al guardar configuración en Redis:', error.message);
+    logger.debug(error.stack);
   }
 });
 
