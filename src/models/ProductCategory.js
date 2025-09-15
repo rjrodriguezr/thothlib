@@ -21,7 +21,6 @@ const ProductCategorySchema = new mongoose.Schema({
 ProductCategorySchema.plugin(modelAuditPlugin);
 
 // Índices
-ProductCategorySchema.index({ name: 1 });
 ProductCategorySchema.index({ parent_category: 1 });
 
 module.exports = mongoose.model('ProductCategory', ProductCategorySchema, "product_categories");
