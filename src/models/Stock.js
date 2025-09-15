@@ -29,6 +29,8 @@ const StockSchema = Schema({
     },
 }); // timestamps para saber cuándo se actualizó el stock por última vez
 
+// Aplicar plugin de auditoría
+StockSchema.plugin(modelAuditPlugin);
 // Índice principal para búsquedas rápidas de stock.
 // Debe ser único para evitar duplicados de un mismo producto en un mismo almacén.
 StockSchema.index({ product: 1, warehouse: 1 }, { unique: true });
