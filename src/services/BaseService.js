@@ -6,8 +6,6 @@ class BaseService {
      */
     constructor(model) {
         this.model = model;
-        // Identifica si el servicio está manejando el modelo 'Company' para aplicar lógica especial.
-        this.isCompanyModel = this.model.modelName === 'Company';
     }
 
     /**
@@ -33,12 +31,8 @@ class BaseService {
      * @returns {object} El objeto de filtro para Mongoose.
      * @private
      */
-    _buildFilter(companyId, query) {
+    _buildFilter(query) {
         const filter = { ...query }; // Clonar para no mutar el original
-        if (companyId && !this.isCompanyModel) {
-            filter.company = companyId;
-        }
-
         // 1. Extraer términos de control y búsqueda
         const searchTerm = filter.search;
 
@@ -54,6 +48,7 @@ class BaseService {
 
         // 3. Si no hay término de búsqueda, devolver el filtro base
         if (!searchTerm) {
+            logger.trace({ function: '[_buildFilter].searchTerm', baseFilter });
             return baseFilter;
         }
 
@@ -89,6 +84,7 @@ class BaseService {
         andClauses.push({ $or: orConditions });
 
         finalFilter.$and = andClauses;
+        logger.trace({ function: '[_buildFilter].finalFilter', finalFilter });
         return finalFilter;
     }
 
@@ -102,9 +98,9 @@ class BaseService {
      * @returns {{query: mongoose.Query, filter: object}} Un objeto con la consulta de Mongoose y el filtro utilizado.
      * @private
      */
-    _buildQuery(companyId, query, methodName) {
+    _buildQuery(query, methodName) {
         // Construye el filtro base
-        const filter = this._buildFilter(companyId, query);
+        const filter = this._buildFilter(query);
 
         // Construye la consulta base usando el método especificado ('find' o 'findOne')
         let sql = this.model[methodName](filter);
@@ -158,37 +154,6 @@ class BaseService {
     }
 
     /**
-     * Inserta un nuevo documento en la base de datos.
-     * Asigna automáticamente los campos `created_by` y `modified_by`.
-     * Asocia el documento a una compañía si se proporciona un `companyId`.
-     *
-     * @param {string | undefined | null} companyId - El ID de la compañía a la que pertenece el documento.
-     * Puede ser `undefined` o `null` para documentos que no pertenecen a una compañía específica (ej. recursos globales del sistema).
-     * @param {string} username - El nombre de usuario que realiza la operación, usado para auditoría.
-     * @param {object} body - El cuerpo del documento a crear.
-     * @returns {Promise<{status: string, _id: any}>} Un objeto indicando el éxito y el ID del nuevo documento.
-     * @throws {Error} Lanza una excepción si ocurre un error durante el guardado (ej. error de validación de Mongoose).
-     * El llamador es responsable de capturar y manejar esta excepción.
-     */
-    async insert(companyId, username, body) {
-        const payload = {
-            ...body,
-            created_by: username,
-            modified_by: username
-        };
-
-        if (companyId && !this.isCompanyModel) {
-            payload.company = companyId;
-        }
-
-        const doc = new this.model(payload);
-
-        const saved = await doc.save();
-        return { status: 'saved', _id: saved._id };
-
-    }
-
-    /**
      * Obtiene una lista paginada de documentos de la base de datos.
      * Permite filtrar, ordenar, paginar y seleccionar campos específicos (proyección).
      *
@@ -204,7 +169,7 @@ class BaseService {
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectAll(companyId, query) {
-        // 1. Opciones de paginación y ordenamiento
+        // 1. Opciones de paginación y ordenamiento (companyId se ignora aquí, se manejará en la subclase)
         const page = parseInt(query.page, 10) || 1;
         const limit = parseInt(query.limit, 10) || 10;
         const skip = (page - 1) * limit;
@@ -212,7 +177,7 @@ class BaseService {
 
 
         // 2. Construir la consulta principal y la de conteo
-        const { query: findQuery, filter } = this._buildQuery(companyId, query, 'find');
+        const { query: findQuery, filter } = this._buildQuery(query, 'find');
 
         // Decide si usar .lean() basado en una opción personalizada del esquema.
         // Por defecto se usa .lean() para mejor rendimiento.
@@ -270,7 +235,7 @@ class BaseService {
      * El llamador es responsable de capturar y manejar esta excepción.
      */
     async selectOne(companyId, query) {
-        const { query: findOneQuery } = this._buildQuery(companyId, query, 'findOne');
+        const { query: findOneQuery } = this._buildQuery(query, 'findOne');
 
         // Decide si usar .lean() basado en una opción personalizada del esquema.
         const schemaOptions = this.model.schema.options || {};
@@ -287,30 +252,30 @@ class BaseService {
     }
 
     /**
-     * Realiza un borrado lógico (soft delete) de un documento, estableciendo su campo `active` a `false`.
+     * Inserta un nuevo documento en la base de datos.
+     * Asigna automáticamente los campos `created_by` y `modified_by`.
+     * Asocia el documento a una compañía si se proporciona un `companyId`.
      *
-     * @param {string | undefined | null} companyId - El ID de la compañía. Si se proporciona, la operación solo
-     * afectará a documentos que pertenezcan a esa compañía, añadiendo una capa de seguridad en un entorno multi-tenant.
-     * Si es `undefined` o `null`, el documento se buscará solo por su `id`, lo cual es útil para recursos que no están ligados a una compañía.
-     * @param {string} username - El nombre de usuario que realiza la operación, para auditoría.
-     * @param {string} id - El ID del documento a eliminar.
-     * @returns {Promise<{status: string, deleted: any}>} Un objeto indicando el éxito y el ID del documento eliminado.
-     * @throws {Error} Lanza una excepción si el documento no se encuentra o si ocurre un error durante el guardado.
+     * @param {string | undefined | null} companyId - El ID de la compañía a la que pertenece el documento.
+     * Puede ser `undefined` o `null` para documentos que no pertenecen a una compañía específica (ej. recursos globales del sistema).
+     * @param {string} username - El nombre de usuario que realiza la operación, usado para auditoría.
+     * @param {object} body - El cuerpo del documento a crear.
+     * @returns {Promise<{status: string, _id: any}>} Un objeto indicando el éxito y el ID del nuevo documento.
+     * @throws {Error} Lanza una excepción si ocurre un error durante el guardado (ej. error de validación de Mongoose).
      * El llamador es responsable de capturar y manejar esta excepción.
      */
-    async delete(companyId, username, id) {
+    async insert(companyId, username, body) {
+        const payload = {
+            ...body,
+            created_by: username,
+            modified_by: username
+        };
 
-        const filter = { _id: id };
-        if (companyId && !this.isCompanyModel) filter.company = companyId;
+        const doc = new this.model(payload);
 
-        const doc = await this.model.findOne(filter);
-        if (!doc) throw new Error(`${this.model.modelName} not found`);
+        const saved = await doc.save();
+        return { status: 'saved', _id: saved._id };
 
-        doc.active = false;
-        doc.modified_by = username;
-        const saved = await doc.save(); // Dispara los hooks
-        logger.info({ status: 'deleted', deleted: saved._id });
-        return { status: 'deleted', deleted: saved._id };
     }
 
     /**
@@ -329,11 +294,7 @@ class BaseService {
     async update(companyId, username, id, body) {
         const updates = { ...body };
 
-        const filter = { _id: id };
-        if (companyId && !this.isCompanyModel) {
-            filter.company = companyId;
-        }
-
+        const filter = { _id: id }; // El filtrado por compañía se hará en la subclase
         const doc = await this.model.findOne(filter);
         if (!doc) {
             throw new Error(`${this.model.modelName} not found`);
@@ -345,6 +306,33 @@ class BaseService {
         return { status: 'updated', updated: saved._id };
 
     }
+
+    /**
+     * Realiza un borrado lógico (soft delete) de un documento, estableciendo su campo `active` a `false`.
+     *
+     * @param {string | undefined | null} companyId - El ID de la compañía. Si se proporciona, la operación solo
+     * afectará a documentos que pertenezcan a esa compañía, añadiendo una capa de seguridad en un entorno multi-tenant.
+     * Si es `undefined` o `null`, el documento se buscará solo por su `id`, lo cual es útil para recursos que no están ligados a una compañía.
+     * @param {string} username - El nombre de usuario que realiza la operación, para auditoría.
+     * @param {string} id - El ID del documento a eliminar.
+     * @returns {Promise<{status: string, deleted: any}>} Un objeto indicando el éxito y el ID del documento eliminado.
+     * @throws {Error} Lanza una excepción si el documento no se encuentra o si ocurre un error durante el guardado.
+     * El llamador es responsable de capturar y manejar esta excepción.
+     */
+    async delete(companyId, username, id) {
+
+        const filter = { _id: id }; // El filtrado por compañía se hará en la subclase
+
+        const doc = await this.model.findOne(filter);
+        if (!doc) throw new Error(`${this.model.modelName} not found`);
+
+        doc.active = false;
+        doc.modified_by = username;
+        const saved = await doc.save(); // Dispara los hooks
+        logger.info({ status: 'deleted', deleted: saved._id });
+        return { status: 'deleted', deleted: saved._id };
+    }
+
 };
 
 module.exports = BaseService;

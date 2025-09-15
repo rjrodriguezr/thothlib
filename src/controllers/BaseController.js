@@ -4,14 +4,14 @@ class BaseController {
 
     /**
      * Crea una instancia de BaseController.
-     * @param {mongoose.Model} model - El modelo de Mongoose para el cual este controlador manejará las operaciones CRUD.
+     * @param {BaseService} service - Una instancia de un servicio que hereda de BaseService.
      */
-    constructor(model) {
-        if (!model) {
-            throw new Error('A Mongoose model must be provided to the BaseController constructor.');
+    constructor(service) {
+        if (!service || !(service instanceof BaseService)) {
+            throw new Error('A service instance inheriting from BaseService must be provided to the BaseController constructor.');
         }
-        this.service = new BaseService(model);
-        this.modelName = model.modelName;
+        this.service = service;
+        this.modelName = service.model.modelName;
 
         // Envolvemos los métodos públicos en el manejador de errores asíncrono.
         // Esto centraliza la gestión de excepciones y limpia los métodos del controlador.
@@ -84,6 +84,7 @@ class BaseController {
     async get(req, res) {
         const companyId = req.token.companyId;
         const queryParams = req.query;
+        logger.trace({token: req.token, query: queryParams});
 
         let result;
         if (queryParams && Object.keys(queryParams).length > 0 && queryParams._id) {
