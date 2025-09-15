@@ -61,23 +61,6 @@ const ProductSchema = Schema({
             default: 0
         }
     },
-    stock: {
-        quantity: {
-            type: Number,
-            required: [true, 'Stock quantity is required'],
-            min: [0, 'Stock cannot be negative']
-        },
-        low_stock_alert: {
-            type: Number,
-            default: 5
-        },
-        status: {
-            type: String,
-            //STOCK_STATUS=> ['DISCONTINUED', 'IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'] => ['DSC', 'INS', 'LST', 'OOS']
-            enum: Object.values(stockStatus), 
-            default: stockStatus.IN_STOCK, // 'INS'
-        }
-    },
     attributes: [{
         key: {
             type: String,
