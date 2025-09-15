@@ -26,19 +26,26 @@ class CompanyScopedService extends BaseService {
         return filter;
     }
 
-    /**
-   * Sobrescribe _buildQuery para pasar el companyId al constructor de filtros.
-     * @override
-     */
-    _buildQuery(companyId, query, methodName) {
-        // 1. Construimos el filtro correcto, que incluye el companyId, llamando a nuestra versión de _buildFilter.
-        const filter = this._buildFilter(companyId, query);
+    // Los métodos selectAll y selectOne deben ser sobrescritos para pasar el companyId
+    // a la lógica de construcción de filtros.
 
-        // 2. Ahora que tenemos el filtro correcto, llamamos a la lógica de _buildQuery de la clase base,
-        //    pero le pasamos nuestro filtro modificado para que lo use directamente.
-        //    Para hacer esto sin cambiar la firma de _buildQuery, replicamos su lógica aquí.
-        return super._buildQuery(query, methodName, filter);
+    async selectAll(companyId, query) {
+        // Construimos el filtro con el companyId antes de llamar a la lógica base.
+        const filter = this._buildFilter(companyId, query);
+        // Llamamos al selectAll de la clase base, pero le pasamos el filtro ya construido.
+        return super.selectAll(query, filter);
     }
+
+    async selectOne(companyId, query) {
+        // Hacemos lo mismo para selectOne.
+        const filter = this._buildFilter(companyId, query);
+        return super.selectOne(query, filter);
+    }
+
+    // _buildQuery ya no necesita ser sobrescrito porque la lógica de filtrado
+    // se maneja en los métodos públicos (selectAll, selectOne).
+    // La versión de BaseService._buildQuery será utilizada directamente.
+
 
     // Los métodos selectAll y selectOne no necesitan ser sobrescritos,
     // ya que la lógica de _buildQuery que ellos llaman ya está manejando el companyId.

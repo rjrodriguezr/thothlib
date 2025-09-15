@@ -167,10 +167,11 @@ class BaseService {
      * @param {string} [query.sort='-createdAt'] - El campo y orden para ordenar (ej. 'name,-age').
      * @returns {Promise<object>} Devuelve un objeto con los resultados paginados y metadatos.
      * @throws {Error} Lanza una excepción si ocurre un error durante la consulta a la base de datos.
+     * @param {object} [prebuiltFilter=null] - Un filtro opcional pre-construido.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
-    async selectAll(companyId, query) {
-        // 1. Opciones de paginación y ordenamiento (companyId se ignora aquí, se manejará en la subclase)
+    async selectAll(query, prebuiltFilter = null) {
+        // 1. Opciones de paginación y ordenamiento
         const page = parseInt(query.page, 10) || 1;
         const limit = parseInt(query.limit, 10) || 10;
         const skip = (page - 1) * limit;
@@ -178,7 +179,7 @@ class BaseService {
 
 
         // 2. Construir la consulta principal y la de conteo
-        const { query: findQuery, filter } = this._buildQuery(query, 'find');
+        const { query: findQuery, filter } = this._buildQuery(query, 'find', prebuiltFilter);
 
         // Decide si usar .lean() basado en una opción personalizada del esquema.
         // Por defecto se usa .lean() para mejor rendimiento.
@@ -233,10 +234,11 @@ class BaseService {
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
      * @returns {Promise<object|null>} Devuelve el documento que coincida con la consulta, o `null` si no se encuentra ninguno.
      * @throws {Error} Lanza una excepción si ocurre un error en la base de datos.
+     * @param {object} [prebuiltFilter=null] - Un filtro opcional pre-construido.
      * El llamador es responsable de capturar y manejar esta excepción.
      */
-    async selectOne(companyId, query) {
-        const { query: findOneQuery } = this._buildQuery(query, 'findOne');
+    async selectOne(query, prebuiltFilter = null) {
+        const { query: findOneQuery } = this._buildQuery(query, 'findOne', prebuiltFilter);
 
         // Decide si usar .lean() basado en una opción personalizada del esquema.
         const schemaOptions = this.model.schema.options || {};
