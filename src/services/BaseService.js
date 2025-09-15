@@ -116,6 +116,7 @@ class BaseService {
             projection = '-active -created_by -created_at -modified_by -modified_at';
         }
         sql = sql.select(projection);
+        logger.trace({ function: '[_buildQuery].projection', projection });
 
         // --- Lógica para POPULATE (Poblar Referencias) ---
         // Esta sección permite poblar campos de referencia de Mongoose (ObjectId refs)
@@ -150,6 +151,7 @@ class BaseService {
                 // 5. Aplicar la instrucción de populate a la consulta.
                 sql = sql.populate(populateOptions);
             });
+            logger.trace({ function: '[_buildQuery].populate', populateInstructions });
         }
         return { query: sql, filter };
     }

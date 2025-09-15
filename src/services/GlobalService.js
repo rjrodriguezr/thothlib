@@ -11,8 +11,26 @@ class GlobalService extends BaseService {
         super(model);
     }
 
-    // No se necesita sobrescribir ningún método.
-    // Usará la implementación neutral de BaseService.
+    /**
+     * Sobrescribe selectAll para alinear la firma del método con la llamada desde BaseController.
+     * Ignora el companyId y pasa los argumentos correctos a la clase base.
+     * @param {string | undefined | null} companyId - El ID de la compañía (ignorado).
+     * @param {object} query - El objeto de consulta.
+     */
+    async selectAll(companyId, query) {
+        // Llama al método de la clase base con los parámetros en el orden correcto, ignorando companyId.
+        return super.selectAll(query);
+    }
+
+    /**
+     * Sobrescribe selectOne para alinear la firma del método con la llamada desde BaseController.
+     * Ignora el companyId y pasa los argumentos correctos a la clase base.
+     * @param {string | undefined | null} companyId - El ID de la compañía (ignorado).
+     * @param {object} query - El objeto de consulta.
+     */
+    async selectOne(companyId, query) {
+        return super.selectOne(query);
+    }
 }
 
 module.exports = GlobalService;
