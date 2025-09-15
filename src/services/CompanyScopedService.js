@@ -31,22 +31,16 @@ class CompanyScopedService extends BaseService {
      * @override
      */
     _buildQuery(companyId, query, methodName) {
-        // La única diferencia con la clase base es que pasamos el companyId a _buildFilter.
+        // 1. Construimos el filtro con el ámbito de la compañía.
         const filter = this._buildFilter(companyId, query);
 
-        // El resto de la lógica es idéntica a BaseService._buildQuery,
-        // pero ahora opera sobre el filtro ya modificado.
-        let sql = this.modelmethodName;
+        // 2. Llamamos al _buildQuery de la clase base para obtener la consulta con la proyección y el populate.
+        //    Le pasamos el `query` original para que pueda extraer `fields` y `populate`.
+        const { query: baseQuery } = super._buildQuery(query, methodName);
 
-        // Reutilizamos la lógica de proyección y populate de la clase base.
-        // Para evitar duplicar código, podríamos refactorizar BaseService para separar
-        // la lógica de proyección/populate, pero por ahora esto es claro.
-        const { query: finalQuery } = super._buildQuery(query, methodName);
-
-        // Reemplazamos la consulta base de finalQuery con nuestra consulta filtrada por compañía.
-        finalQuery.setQuery(filter);
-
-        return { query: finalQuery, filter };
+        // 3. Reemplazamos el filtro de la consulta base con nuestro filtro modificado.
+        baseQuery.setQuery(filter);
+        return { query: baseQuery, filter };
     }
 
     // Los métodos selectAll y selectOne no necesitan ser sobrescritos,
