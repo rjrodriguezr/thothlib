@@ -14,19 +14,16 @@ const WarehouseSchema = Schema({
     },
     address:{
         type: String,
-        maxlength: 200,
         trim: true,
     },
     city: {
         type: String,
         maxlength: 32,
-        required: [true, 'Warehouse city is required'],
         trim: true,
     },
     country: {
         type: String,
         maxlength: 64,
-        required: [true, 'Warehouse country is required'],
         trim: true,
     },    
     metadata: Schema.Types.Mixed,
