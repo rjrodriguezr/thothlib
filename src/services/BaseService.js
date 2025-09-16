@@ -113,7 +113,7 @@ class BaseService {
             projection = query.fields.replace(/,/g, ' ');
         } else {
             // Por defecto, se excluyen los campos de auditoría y estado.
-            projection = '-active -created_by -created_at -modified_by -modified_at';
+            projection = '-created_by -created_at -modified_by -modified_at';
         }
         sql = sql.select(projection);
         logger.trace({ function: '[_buildQuery].projection', projection });
