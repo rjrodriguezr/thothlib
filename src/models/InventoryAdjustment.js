@@ -1,6 +1,8 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
 const { movementCategories } = require('thothconst');
+const Company = require('./Company'); // Importar el modelo Company
+const logger = require('../../lib/logger');
 
 const InventoryAdjustment = Schema({
     company: {
@@ -11,8 +13,7 @@ const InventoryAdjustment = Schema({
     // Número de referencia único para este ajuste
     reference_number: {
         type: String,
-        required: true,
-        unique: true, // Asegura que no haya dos ajustes con la misma referencia
+        unique: true, // Se generará automáticamente, pero debe ser único
     },
     warehouse: {
         type: Schema.Types.ObjectId,
@@ -21,9 +22,8 @@ const InventoryAdjustment = Schema({
     },
     // El usuario que realizó el ajuste (Jefe de Almacén)
     user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User', // Asumo que tienes un modelo 'User'
-        required: [true, 'User is required'],
+        type: String,
+        required: [true, 'Created by is required']
     },
     // Tipo de ajuste
     type: {
@@ -42,29 +42,11 @@ const InventoryAdjustment = Schema({
         default: '',
         trim: true
     },
-    // Array de productos ajustados. Aunque el caso de uso es de uno,
-    // diseñarlo así permite ajustes de múltiples productos en el futuro.
+    // Array de referencias a los movimientos de inventario generados por este ajuste.
     items: [{
-        product: {
-            type: Schema.Types.ObjectId,
-            ref: 'Product',
-            required: true,
-        },
-        quantity: {
-            type: Number,
-            required: true,
-            min: [0.0001, 'Quantity must be greater than zero'],
-        },
-        // Se almacena el stock que había ANTES del ajuste para auditoría
-        stock_before: {
-            type: Number,
-            required: true,
-        },
-        // Y el stock que quedó DESPUÉS
-        stock_after: {
-            type: Number,
-            required: true,
-        }
+        type: Schema.Types.ObjectId,
+        ref: 'Movement',
+        required: true
     }],
     notes: {
         type: String,
@@ -74,7 +56,66 @@ const InventoryAdjustment = Schema({
         type: String,
         trim: true,
     },
+}, { toObject: { virtuals: true }, toJSON: { virtuals: true } });
+// Especificar que no queremos _id para los elementos del arreglo
+InventoryAdjustment.path('items').schema.set('_id', false);
+
+// Middleware Pre-Save para generar el reference_number
+InventoryAdjustment.pre('save', async function (next) {
+    // 'this' es el documento InventoryAdjustment que se va a guardar.
+    // Solo ejecutar esta lógica si el documento es nuevo.
+    if (this.isNew) {
+        const session = await this.constructor.db.startSession();
+        try {
+            await session.withTransaction(async () => {
+                // 1. Obtener la configuración de la compañía y actualizar el contador atómicamente
+                const company = await Company.findOneAndUpdate(
+                    { _id: this.company },
+                    { $inc: { 'system_settings.sequences.adjustmentStartNumber': 1 } },
+                    { new: true, session: session } // 'new: true' devuelve el documento actualizado
+                );
+
+                if (!company) {
+                    throw new Error(`No se pudo encontrar la compañía con ID ${this.company}`);
+                }
+
+                // Asegurar que sequences exista y tenga valores por defecto si es necesario.
+                const sequences = company.system_settings.sequences || {};
+                const adjustmentPrefix = sequences.adjustmentPrefix || 'ADJ';
+                const paddingLength = sequences.paddingLength || 5;
+
+                // El adjustmentStartNumber viene del documento actualizado.
+                // Si no existía, $inc lo habrá creado y establecido en 1.
+                const adjustmentStartNumber = company.system_settings.sequences.adjustmentStartNumber;
+
+                // El número a usar es el anterior al incremento.
+                const currentSequenceNumber = adjustmentStartNumber - 1;
+
+                // 2. Construir el reference_number
+                const currentYear = new Date().getFullYear().toString().slice(-2);
+
+                // 'numeracion' es el número de secuencia con ceros a la izquierda
+                const numeracion = String(currentSequenceNumber).padStart(paddingLength, '0');
+
+                const generatedRef = `${adjustmentPrefix}-${currentYear}-${numeracion}`;
+
+                this.reference_number = generatedRef;
+
+                logger.info(`Número de referencia generado: ${generatedRef} para la compañía ${this.company}`);
+            });
+        } catch (error) {
+            logger.error(`Error generando el número de referencia para el ajuste de inventario: ${error.message}`);
+            // Pasar el error a Mongoose para detener la operación de guardado.
+            return next(error);
+        } finally {
+            // Asegurarse de que la sesión se cierre
+            session.endSession();
+        }
+    }
+    // Continuar con la operación de guardado.
+    next();
 });
+
 
 // Aplicar plugin de auditoría
 InventoryAdjustment.plugin(modelAuditPlugin);
@@ -83,5 +124,6 @@ InventoryAdjustment.plugin(modelAuditPlugin);
 InventoryAdjustment.index({ company: 1, warehouse: 1 });
 InventoryAdjustment.index({ user: 1 });
 InventoryAdjustment.index({ reason: 1 });
+InventoryAdjustment.index({ company: 1, reference_number: 1 }, { unique: true });
 
 module.exports = model('InventoryAdjustment', InventoryAdjustment);

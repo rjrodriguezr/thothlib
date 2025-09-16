@@ -45,13 +45,15 @@ const CompanySchema = Schema({
       external_apis: {},
       email_config: {},
       payment_gateway: {},
-      sequence_settings: {
+      sequences: {
         invoicePrefix: 'FAC',
         quotationPrefix: 'COT',
+        adjustmentPrefix: 'ADJ',
         invoiceStartNumber: 1,
         quotationStartNumber: 1,
+        adjustmentStartNumber: 1,
         resetAnnually: true,
-        paddingLength: 4
+        paddingLength: 5
       },
       // --- Nuevas configuraciones para Meta ---
       meta_integrations: { // Agrupamos las configuraciones de Meta aquí

@@ -2,7 +2,7 @@ const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
 const { movementTypes } = require('thothconst');
 
-const InventoryMovementSchema = Schema({
+const MovementSchema = Schema({
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
@@ -37,7 +37,7 @@ const InventoryMovementSchema = Schema({
         enum: Object.values(movementTypes),
         required: true,
     },
-    
+
     // --- FIN DE LA CORRECCIÓN ARQUITECTÓNICA ---
 
     quantity_change: {
@@ -53,19 +53,18 @@ const InventoryMovementSchema = Schema({
         required: true,
     },
     user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        type: String,
+        required: [true, 'Created by is required']
     },
 });
 
-InventoryMovementSchema.plugin(modelAuditPlugin);
+MovementSchema.plugin(modelAuditPlugin);
 // Creamos un índice sobre los campos polimórficos para poder buscar
 // todos los movimientos originados por un documento específico.
-InventoryMovementSchema.index({ source_document_id: 1, source_document_type: 1 });
+MovementSchema.index({ source_document_id: 1, source_document_type: 1 });
 
 // El índice principal para consultar el historial de un producto no cambia.
-InventoryMovementSchema.index({ product: 1, warehouse: 1, executed_at: -1 });
+MovementSchema.index({ product: 1, warehouse: 1, executed_at: -1 });
 
 
-module.exports = model('InventoryMovement', InventoryMovementSchema);
+module.exports = model('Movement', MovementSchema);
