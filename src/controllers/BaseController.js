@@ -91,7 +91,7 @@ class BaseController {
         if (id) {
             // Si hay un id en los parámetros de la ruta, es una operación para un solo documento.
             // Pasamos el id dentro del objeto de consulta para que el servicio lo use.
-            result = await this.service.selectOne(companyId, { ...queryParams, id });
+            result = await this.service.selectOne(companyId, { ...queryParams, _id: id });
         } else {
             // De lo contrario, es una operación para múltiples documentos.
             result = await this.service.selectAll(companyId, queryParams);
