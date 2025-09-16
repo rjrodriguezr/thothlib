@@ -2,7 +2,7 @@ const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
 const { movementCategories } = require('thothconst');
 
-const InventoryAdjustmentSchema = Schema({
+const InventoryAdjustment = Schema({
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
@@ -31,10 +31,16 @@ const InventoryAdjustmentSchema = Schema({
         enum: Object.values(movementCategories),
         required: [true, 'Adjustment type is required'],
     },
-    reason: {
-        type: Schema.Types.ObjectId,
-        ref: 'AdjustmentReason',
-        required: [true, 'Adjustment reason is required'],
+    reason_label: {
+        type: String,
+        maxlength: 32,
+        required: [true, 'Reason label is required'],
+        trim: true
+    },
+    reason_description: {
+        type: String,
+        default: '',
+        trim: true
     },
     // Array de productos ajustados. Aunque el caso de uso es de uno,
     // diseñarlo así permite ajustes de múltiples productos en el futuro.
@@ -71,11 +77,11 @@ const InventoryAdjustmentSchema = Schema({
 });
 
 // Aplicar plugin de auditoría
-InventoryAdjustmentSchema.plugin(modelAuditPlugin);
+InventoryAdjustment.plugin(modelAuditPlugin);
 
 // Índices para búsquedas comunes
-InventoryAdjustmentSchema.index({ company: 1, warehouse: 1 });
-InventoryAdjustmentSchema.index({ user: 1 });
-InventoryAdjustmentSchema.index({ reason: 1 });
+InventoryAdjustment.index({ company: 1, warehouse: 1 });
+InventoryAdjustment.index({ user: 1 });
+InventoryAdjustment.index({ reason: 1 });
 
-module.exports = model('InventoryAdjustment', InventoryAdjustmentSchema);
+module.exports = model('InventoryAdjustment', InventoryAdjustment);

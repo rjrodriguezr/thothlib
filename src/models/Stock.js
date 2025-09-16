@@ -1,4 +1,5 @@
 const { Schema, model } = require('mongoose');
+const { modelAuditPlugin } = require('../middlewares');
 
 const StockSchema = Schema({
     company: {
