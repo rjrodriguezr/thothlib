@@ -12,7 +12,6 @@ const controllers = require('./src/controllers');
 const middlewares = require('./src/middlewares');
 const models = require('./src/models');
 const services = require('./src/services');
-const validators = require('./src/validators');
 
 try {
   const packageJson = require('./package.json');
@@ -35,5 +34,4 @@ module.exports = {
   middlewares,
   models,
   services,
-  validators,
 };
