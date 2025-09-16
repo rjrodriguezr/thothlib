@@ -102,6 +102,7 @@ class BaseService {
     _buildQuery(query, methodName, prebuiltFilter = null) {
         // Usa el filtro pre-construido si se proporciona; de lo contrario, construye uno.
         const filter = prebuiltFilter || this._buildFilter(query);
+        logger.trace({ function: '[BaseService]._buildQuery->filter', filter });
 
         // Construye la consulta base usando el método especificado ('find' o 'findOne')
         let sql = this.model[methodName](filter);

@@ -1,7 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
 const { rol } = require("thothconst");
-const bcrypt = require('bcrypt');
 const logger = require('../../lib/logger');
 
 const UserSchema = new Schema({
@@ -126,6 +125,7 @@ UserSchema.pre('save', async function (next) {
     try {
         // Hashear la contraseña si es nuevo o se está modificando el password
         if (this.isNew || this.isModified('password')) {
+            const bcrypt = require('bcrypt');
             const salt = bcrypt.genSaltSync();
             const hashedPassword = bcrypt.hashSync(this.password, salt);
             //const hashedPassword = hash(this.password);
