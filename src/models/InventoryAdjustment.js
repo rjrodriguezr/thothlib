@@ -57,8 +57,6 @@ const InventoryAdjustment = Schema({
         trim: true,
     },
 }, { toObject: { virtuals: true }, toJSON: { virtuals: true } });
-// Especificar que no queremos _id para los elementos del arreglo
-InventoryAdjustment.path('items').schema.set('_id', false);
 
 // Middleware Pre-Save para generar el reference_number
 InventoryAdjustment.pre('save', async function (next) {
