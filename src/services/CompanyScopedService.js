@@ -34,12 +34,14 @@ class CompanyScopedService extends BaseService {
         // Construimos el filtro con el companyId antes de llamar a la lógica base.
         const filter = this._buildFilter(companyId, query);
         // Llamamos al selectAll de la clase base, pero le pasamos el filtro ya construido.
+        logger.trace({file: '[CompanyScopedService].selectAll', companyId, query, filter});
         return super.selectAll(query, filter);
     }
 
     async selectOne(companyId, query) {
         // Hacemos lo mismo para selectOne.
         const filter = this._buildFilter(companyId, query);
+        logger.trace({file: '[CompanyScopedService].selectOne', companyId, query, filter});
         return super.selectOne(query, filter);
     }
 
