@@ -83,15 +83,15 @@ class BaseController {
      */
     async get(req, res) {
         const companyId = req.token.companyId;
-        const { _id } = req.params;
+        const { id } = req.params;
         const queryParams = req.query;
 
         let result;
-        logger.trace({file: '[BaseController].get', companyId, _id, queryParams});
-        if (_id) {
-            // Si hay un _id en los parámetros de la ruta, es una operación para un solo documento.
-            // Pasamos el _id dentro del objeto de consulta para que el servicio lo use.
-            result = await this.service.selectOne(companyId, { ...queryParams, _id });
+        logger.trace({file: '[BaseController].get', companyId, id, queryParams});
+        if (id) {
+            // Si hay un id en los parámetros de la ruta, es una operación para un solo documento.
+            // Pasamos el id dentro del objeto de consulta para que el servicio lo use.
+            result = await this.service.selectOne(companyId, { ...queryParams, id });
         } else {
             // De lo contrario, es una operación para múltiples documentos.
             result = await this.service.selectAll(companyId, queryParams);
@@ -104,8 +104,8 @@ class BaseController {
      */
     async delete(req, res) {
         const { companyId, username } = req.token;
-        const { _id } = req.params;
-        const result = await this.service.delete(companyId, username, _id);
+        const { id } = req.params;
+        const result = await this.service.delete(companyId, username, id);
         res.status(200).json(result);
     }
 
@@ -114,9 +114,9 @@ class BaseController {
      */
     async update(req, res) {
         const { companyId, username } = req.token;
-        const { _id } = req.params;
-        logger.trace({file: '[BaseController].update', companyId, username, token: req.token,_id, body: req.body});
-        const result = await this.service.update(companyId, username, _id, req.body);
+        const { id } = req.params;
+        logger.trace({file: '[BaseController].update', companyId, username, token: req.token,id, body: req.body});
+        const result = await this.service.update(companyId, username, id, req.body);
         res.status(200).json(result);
     }
 };
