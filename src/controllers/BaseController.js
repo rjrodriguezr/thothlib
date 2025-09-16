@@ -87,7 +87,6 @@ class BaseController {
         const queryParams = req.query;
 
         let result;
-        logger.trace({file: '[BaseController].get', companyId, id, queryParams});
         if (id) {
             // Si hay un id en los parámetros de la ruta, es una operación para un solo documento.
             // Pasamos el id dentro del objeto de consulta para que el servicio lo use.
@@ -115,7 +114,6 @@ class BaseController {
     async update(req, res) {
         const { companyId, username } = req.token;
         const { id } = req.params;
-        logger.trace({file: '[BaseController].update', companyId, username, token: req.token,id, body: req.body});
         const result = await this.service.update(companyId, username, id, req.body);
         res.status(200).json(result);
     }

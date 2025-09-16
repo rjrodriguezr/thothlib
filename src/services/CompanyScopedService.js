@@ -34,14 +34,12 @@ class CompanyScopedService extends BaseService {
         // Construimos el filtro con el companyId antes de llamar a la lógica base.
         const filter = this._buildFilter(companyId, query);
         // Llamamos al selectAll de la clase base, pero le pasamos el filtro ya construido.
-        logger.trace({file: '[CompanyScopedService].selectAll', companyId, query, filter});
         return super.selectAll(query, filter);
     }
 
     async selectOne(companyId, query) {
         // Hacemos lo mismo para selectOne.
         const filter = this._buildFilter(companyId, query);
-        logger.trace({file: '[CompanyScopedService].selectOne', companyId, query, filter});
         return super.selectOne(query, filter);
     }
 
@@ -70,7 +68,6 @@ class CompanyScopedService extends BaseService {
         if (companyId && !this.isCompanyModel) {
             filter.company = companyId;
         }
-        logger.trace({file: '[CompanyScopedService].update', companyId, username, id, body, filter});
         // La lógica de BaseService.update no es segura para multi-tenant porque solo busca por _id.
         // Por eso, aquí buscamos el documento con el filtro seguro y luego llamamos a la lógica de guardado.
         const doc = await this.model.findOne(filter);
