@@ -114,6 +114,7 @@ class BaseController {
     async update(req, res) {
         const { companyId, username } = req.token;
         const { _id } = req.params;
+        logger.trace({token: req.token,_id, body: req.body});
         const result = await this.service.update(companyId, username, _id, req.body);
         res.status(200).json(result);
     }

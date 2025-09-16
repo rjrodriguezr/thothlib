@@ -1,3 +1,4 @@
+const logger = require('../../lib/logger');
 const BaseService = require('./BaseService');
 
 class CompanyScopedService extends BaseService {
@@ -67,6 +68,7 @@ class CompanyScopedService extends BaseService {
         if (companyId && !this.isCompanyModel) {
             filter.company = companyId;
         }
+        logger.trace({companyId, username, id, body, filter});
         // La lógica de BaseService.update no es segura para multi-tenant porque solo busca por _id.
         // Por eso, aquí buscamos el documento con el filtro seguro y luego llamamos a la lógica de guardado.
         const doc = await this.model.findOne(filter);
