@@ -4,7 +4,7 @@ const { movementCategories } = require('thothconst');
 const Company = require('./Company'); // Importar el modelo Company
 const logger = require('../../lib/logger');
 
-const InventoryAdjustment = Schema({
+const Adjustment = Schema({
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
@@ -19,11 +19,6 @@ const InventoryAdjustment = Schema({
         type: Schema.Types.ObjectId,
         ref: 'Warehouse',
         required: [true, 'Warehouse reference is required'],
-    },
-    // El usuario que realizó el ajuste (Jefe de Almacén)
-    user: {
-        type: String,
-        required: [true, 'Created by is required']
     },
     // Tipo de ajuste
     type: {
@@ -59,8 +54,8 @@ const InventoryAdjustment = Schema({
 }, { toObject: { virtuals: true }, toJSON: { virtuals: true } });
 
 // Middleware Pre-Save para generar el reference_number
-InventoryAdjustment.pre('save', async function (next) {
-    // 'this' es el documento InventoryAdjustment que se va a guardar.
+Adjustment.pre('save', async function (next) {
+    // 'this' es el documento Adjustment que se va a guardar.
     // Solo ejecutar esta lógica si el documento es nuevo.
     if (this.isNew) {
         const session = await this.constructor.db.startSession();
@@ -116,12 +111,12 @@ InventoryAdjustment.pre('save', async function (next) {
 
 
 // Aplicar plugin de auditoría
-InventoryAdjustment.plugin(modelAuditPlugin);
+Adjustment.plugin(modelAuditPlugin);
 
 // Índices para búsquedas comunes
-InventoryAdjustment.index({ company: 1, warehouse: 1 });
-InventoryAdjustment.index({ user: 1 });
-InventoryAdjustment.index({ reason: 1 });
-InventoryAdjustment.index({ company: 1, reference_number: 1 }, { unique: true });
+Adjustment.index({ company: 1, warehouse: 1 });
+Adjustment.index({ user: 1 });
+Adjustment.index({ reason: 1 });
+Adjustment.index({ company: 1, reference_number: 1 }, { unique: true });
 
-module.exports = model('InventoryAdjustment', InventoryAdjustment);
+module.exports = model('Adjustment', Adjustment);

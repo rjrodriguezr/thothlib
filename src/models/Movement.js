@@ -52,10 +52,6 @@ const MovementSchema = Schema({
         type: Number,
         required: true,
     },
-    user: {
-        type: String,
-        required: [true, 'Created by is required']
-    },
 });
 
 MovementSchema.plugin(modelAuditPlugin);
