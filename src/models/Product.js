@@ -1,5 +1,5 @@
 const { Schema, model } = require('mongoose');
-const { currency, stockStatus } = require('thothconst');
+const { currency } = require('thothconst');
 const { modelAuditPlugin } = require('../middlewares');
 
 const ProductSchema = Schema({
@@ -25,41 +25,39 @@ const ProductSchema = Schema({
         match: [/^[A-Z0-9\-_]+$/, 'Invalid SKU format']
     },
     // Unidad de medida del producto
-    unit_of_measure: {
-        type: Schema.Types.ObjectId,
-        ref: 'UnitsOfMeasure',
+    uom: {
+        type: String,
+        maxlength: 3,
         required: [true, 'Unit of measure is required']
     },
     // ProductCategory principal obligatorio
     category: {
-        type: Schema.Types.ObjectId,
-        ref: 'ProductCategory',
+        type: String,
+        maxlength: 3,
         required: [true, 'Product category is required']
     },
     // Tipos de producto adicionales opcionales
     categories: [{
-        type: Schema.Types.ObjectId,
-        ref: 'ProductCategory'
+        type: String,
+        maxlength: 3
     }],
     price: {
-        base: {
-            type: Number,
-            required: [true, 'Base price is required'],
-            min: [0, 'Price cannot be negative']
-        },
-        currency: {
-            type: String,
-            required: true,
-            // CURRENCY=> ['DOLAR','EURO''SOL'] => ['USD','EUR''PEN']
-            enum: Object.values(currency), 
-            default: currency.SOL // 'PEN'
-        },
-        tax_percentage: {
-            type: Number,
-            min: 0,
-            max: 100,
-            default: 0
-        }
+        type: Number,
+        required: [true, 'Base price is required'],
+        min: [0, 'Price cannot be negative']
+    },
+    currency: {
+        type: String,
+        required: true,
+        // CURRENCY=> ['DOLAR','EURO''SOL'] => ['USD','EUR''PEN']
+        enum: Object.values(currency),
+        default: currency.SOL // 'PEN'
+    },
+    tax_percentage: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 0
     },
     attributes: [{
         key: {
@@ -69,15 +67,6 @@ const ProductSchema = Schema({
         },
         value: Schema.Types.Mixed,
         display_text: String
-    }],
-    variants: [{
-        sku: String,
-        price_offset: Number,
-        stock: Number,
-        attributes: [{
-            key: String,
-            value: String
-        }]
     }],
     tags: [{
         type: String,
@@ -103,7 +92,7 @@ const ProductSchema = Schema({
         ref: 'Product'
     }],
     metadata: Schema.Types.Mixed,
-});
+}, { toObject: { virtuals: true }, toJSON: { virtuals: true } });
 
 // Aplicar plugin de auditoría
 ProductSchema.plugin(modelAuditPlugin);
@@ -111,10 +100,10 @@ ProductSchema.plugin(modelAuditPlugin);
 ProductSchema.index({ name: 'text', description: 'text' }); // Búsqueda full-text
 ProductSchema.index({ company: 1, sku: 1 });
 ProductSchema.index({ category: 1 }); // Nuevo índice para búsquedas por categoría principal
-ProductSchema.index({ unit_of_measure: 1 }); // Índice para búsquedas por unidad de medida
+ProductSchema.index({ uom: 1 }); // Índice para búsquedas por unidad de medida
 
-ProductSchema.virtual('price.total').get(function() {
-    return this.price.base * (1 + (this.price.tax_percentage / 100));
+ProductSchema.virtual('price_total').get(function () {
+    return this.price * (1 + (this.tax_percentage / 100));
 });
 
 module.exports = model('Product', ProductSchema);
