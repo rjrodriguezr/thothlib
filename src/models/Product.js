@@ -24,17 +24,17 @@ const ProductSchema = Schema({
         uppercase: true,
         match: [/^[A-Z0-9\-_]+$/, 'Invalid SKU format']
     },
-    // Unidad de medida del producto
-    uom: {
-        type: String,
-        maxlength: 3,
-        required: [true, 'Unit of measure is required']
-    },
-    // ProductCategory principal obligatorio
+    // UOM Category
     category: {
         type: String,
         maxlength: 3,
-        required: [true, 'Product category is required']
+        required: [true, 'UOM category is required']
+    },
+    // UOM
+    uom: {
+        type: String,
+        maxlength: 3,
+        required: [true, 'UOM is required']
     },
     // Tipos de producto adicionales opcionales
     categories: [{
