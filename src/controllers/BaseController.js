@@ -50,7 +50,7 @@ class BaseController {
     _handleError(res, error, action, resourceId = null) {
         const resourceInfo = resourceId ? ` with id ${resourceId}` : '';
         const logMessage = `Error ${action} ${this.modelName}${resourceInfo}`;
-        const clientMessage = `Error ${action} ${this.modelName}`;
+        const clientMessage = `Error ${action} ${this.modelName}: ${error.message}`;
 
         // Manejo específico para métodos no implementados en clases hijas
         if (error.message.includes('not implemented')) {
@@ -65,7 +65,7 @@ class BaseController {
         const isNotFound = error.message.toLowerCase().includes('not found');
         const statusCode = isNotFound ? 404 : 500;
 
-        res.status(statusCode).json({ message: clientMessage, error: error.message });
+        res.status(statusCode).json({ message: clientMessage });
     }
 
     /**
