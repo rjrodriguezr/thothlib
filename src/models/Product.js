@@ -25,7 +25,7 @@ const ProductSchema = Schema({
         match: [/^[A-Z0-9\-_]+$/, 'Invalid SKU format']
     },
     // UOM Category
-    category: {
+    uom_category: {
         type: String,
         maxlength: 3,
         required: [true, 'UOM category is required']
@@ -41,17 +41,17 @@ const ProductSchema = Schema({
         type: String,
         maxlength: 3
     }],
-    price: {
-        type: Number,
-        required: [true, 'Base price is required'],
-        min: [0, 'Price cannot be negative']
-    },
     currency: {
         type: String,
         required: true,
         // CURRENCY=> ['DOLAR','EURO''SOL'] => ['USD','EUR''PEN']
         enum: Object.values(currency),
         default: currency.SOL // 'PEN'
+    },
+    price: {
+        type: Number,
+        required: [true, 'Base price is required'],
+        min: [0, 'Price cannot be negative']
     },
     tax_percentage: {
         type: Number,
