@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
-const { movementCategories } = require('thothconst');
+const { movementCategories, adjustmentReasons } = require('thothconst');
 const Company = require('./Company'); // Importar el modelo Company
 const logger = require('../../lib/logger');
 
@@ -26,11 +26,10 @@ const Adjustment = Schema({
         enum: Object.values(movementCategories),
         required: [true, 'Adjustment type is required'],
     },
-    reason_label: {
+    reason: {
         type: String,
-        maxlength: 32,
-        required: [true, 'Reason label is required'],
-        trim: true
+        enum: Object.values(adjustmentReasons),
+        required: [true, 'Adjustment reason is required'],
     },
     reason_description: {
         type: String,
