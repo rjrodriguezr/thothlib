@@ -97,7 +97,7 @@ const ProductSchema = Schema({
 // Aplicar plugin de auditoría
 ProductSchema.plugin(modelAuditPlugin);
 
-ProductSchema.index({ name: 'text', description: 'text' }); // Búsqueda full-text
+ProductSchema.index({ name: 'text', description: 'text', sku: 'text' }); // Búsqueda full-text
 ProductSchema.index({ company: 1, sku: 1 });
 ProductSchema.index({ category: 1 }); // Nuevo índice para búsquedas por categoría principal
 ProductSchema.index({ uom: 1 }); // Índice para búsquedas por unidad de medida
