@@ -63,7 +63,10 @@ Adjustment.pre('save', async function (next) {
                 // 1. Obtener la configuración de la compañía y actualizar el contador atómicamente
                 const company = await Company.findOneAndUpdate(
                     { _id: this.company },
-                    { $inc: { 'system_settings.sequences.adjustmentStartNumber': 1 } },
+                    { 
+                        $inc: { 'system_settings.sequences.adjustmentStartNumber': 1 },
+                        $set: { modified_by: this.modified_by } // Actualiza quién modificó la compañía
+                    },
                     { new: true, session: session } // 'new: true' devuelve el documento actualizado
                 );
 

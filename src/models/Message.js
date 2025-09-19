@@ -113,7 +113,10 @@ MessageSchema.pre('save', async function (next) {
                         content: this.content.text, // Asume que el contenido es de tipo texto
                         senderType: this.sender.type,
                         timestamp: new Date()
-                    }
+                    },
+                    // Asignar campos de auditoría al nuevo Chat
+                    created_by: this.created_by,
+                    modified_by: this.modified_by
                 });
                 await chat.save();
             }
