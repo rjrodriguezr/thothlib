@@ -9,14 +9,14 @@ const MovementSchema = Schema({
         ref: 'Company',
         required: true,
     },
-    product: {
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true,
-    },
     warehouse: {
         type: Schema.Types.ObjectId,
         ref: 'Warehouse',
+        required: true,
+    },
+    product: {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
         required: true,
     },
 
