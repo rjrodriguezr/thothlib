@@ -20,12 +20,6 @@ const Adjustment = Schema({
         ref: 'Warehouse',
         required: [true, 'Warehouse reference is required'],
     },
-    // Tipo de ajuste
-    type: {
-        type: String,
-        enum: Object.values(movementCategories),
-        required: [true, 'Adjustment type is required'],
-    },
     reason: {
         type: String,
         enum: Object.values(adjustmentReasons),
@@ -117,7 +111,6 @@ Adjustment.plugin(modelAuditPlugin);
 
 // Índices para búsquedas comunes
 Adjustment.index({ company: 1, warehouse: 1 });
-Adjustment.index({ user: 1 });
 Adjustment.index({ reason: 1 });
 Adjustment.index({ company: 1, reference_number: 1 }, { unique: true });
 
