@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { modelAuditPlugin } = require('../middlewares');
-const { movementCategories, adjustmentReasons } = require('thothconst');
+const { adjustmentReasons } = require('thothconst');
 const Company = require('./Company'); // Importar el modelo Company
 const logger = require('../../lib/logger');
 
@@ -33,8 +33,7 @@ const Adjustment = Schema({
     // Array de referencias a los movimientos de inventario generados por este ajuste.
     items: [{
         type: Schema.Types.ObjectId,
-        ref: 'Movement',
-        required: true
+        ref: 'Movement'
     }],
     notes: {
         type: String,
@@ -50,8 +49,12 @@ const Adjustment = Schema({
 Adjustment.pre('save', async function (next) {
     // 'this' es el documento Adjustment que se va a guardar.
     // Solo ejecutar esta lógica si el documento es nuevo.
-    if (this.isNew) {
-        const session = await this.constructor.db.startSession();
+    if (this.isNew && !this.reference_number) { // Solo si es nuevo y no tiene ya un número
+        // Determinar si ya estamos en una sesión (pasada desde un servicio) o si necesitamos crear una.
+        const existingSession = this.$session();
+        const session = existingSession || await this.constructor.db.startSession();
+        const closeSession = !existingSession; // Solo cerramos la sesión si la creamos aquí.
+
         try {
             await session.withTransaction(async () => {
                 // 1. Obtener la configuración de la compañía y actualizar el contador atómicamente
@@ -97,8 +100,10 @@ Adjustment.pre('save', async function (next) {
             // Pasar el error a Mongoose para detener la operación de guardado.
             return next(error);
         } finally {
-            // Asegurarse de que la sesión se cierre
-            session.endSession();
+            // Asegurarse de que la sesión se cierre solo si la creamos en este hook.
+            if (closeSession) {
+                session.endSession();
+            }
         }
     }
     // Continuar con la operación de guardado.

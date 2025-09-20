@@ -63,11 +63,16 @@ MovementSchema.pre('save', async function (next) {
         return next();
     }
 
-    const session = await this.constructor.db.startSession();
+    // Determinar si ya estamos en una sesión (pasada desde un servicio) o si necesitamos crear una.
+    const existingSession = this.$session();
+    const session = existingSession || await this.constructor.db.startSession();
+    const closeSession = !existingSession; // Solo cerramos la sesión si la creamos aquí.
 
     try {
         await session.withTransaction(async () => {
             const { company, warehouse, product, type, quantity_change } = this;
+
+            if (!existingSession) this.constructor.db.startSession();
 
             // Asignar campos de auditoría. Asumimos que el creador del movimiento
             // se pasa en el cuerpo del documento al crearlo.
@@ -127,7 +132,9 @@ MovementSchema.pre('save', async function (next) {
     } catch (error) {
         return next(error); // Pasar el error a Mongoose para detener la operación.
     } finally {
-        session.endSession(); // Asegurarse de que la sesión se cierre siempre.
+        if (closeSession) {
+            session.endSession(); // Asegurarse de que la sesión se cierre solo si la creamos en este hook.
+        }
     }
 
     next();
