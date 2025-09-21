@@ -1,6 +1,6 @@
 {
   "name": "thothlib",
-  "version": "1.20.2",
+  "version": "1.20.3",
   "description": "Libreria de utilidades para apis de sistema thoth",
   "main": "./index.js",
   "scripts": {

@@ -47,11 +47,11 @@ const MovementSchema = Schema({
     },
     stock_before: {
         type: Number,
-        required: true,
+        // required: true, // Se elimina 'required' porque el pre-save hook se encarga de asignarlo.
     },
     stock_after: {
         type: Number,
-        required: true,
+        // required: true, // Se elimina 'required' porque el pre-save hook se encarga de asignarlo.
     },
 });
 
@@ -139,7 +139,7 @@ MovementSchema.plugin(modelAuditPlugin);
 MovementSchema.index({ source_document_id: 1, source_document_type: 1 });
 
 // El índice principal para consultar el historial de un producto no cambia.
-MovementSchema.index({ product: 1, warehouse: 1, executed_at: -1 });
+MovementSchema.index({ product: 1, warehouse: 1, created_at: -1 });
 
 
 module.exports = model('Movement', MovementSchema);
