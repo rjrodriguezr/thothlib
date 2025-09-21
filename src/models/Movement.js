@@ -63,78 +63,71 @@ MovementSchema.pre('save', async function (next) {
         return next();
     }
 
-    // Determinar si ya estamos en una sesión (pasada desde un servicio) o si necesitamos crear una.
+    // El servicio que llama a .save() DEBE proporcionar una sesión.
+    // Si no hay sesión, la operación fallará, lo cual es el comportamiento esperado.
     const existingSession = this.$session();
-    const session = existingSession || await this.constructor.db.startSession();
-    const closeSession = !existingSession; // Solo cerramos la sesión si la creamos aquí.
+    if (!existingSession) {
+        return next(new Error('Se requiere una sesión de transacción para crear un movimiento.'));
+    }
 
     try {
-        await session.withTransaction(async () => {
-            const { company, warehouse, product, type, quantity_change } = this;
+        const { company, warehouse, product, type, quantity_change } = this;
 
-            if (!existingSession) this.constructor.db.startSession();
+        // Asignar campos de auditoría. Asumimos que el creador del movimiento
+        // se pasa en el cuerpo del documento al crearlo.
+        // Si `created_by` no existe, se asigna.
+        if (!this.created_by) this.created_by = this.modified_by;
+        // `modified_by` siempre se actualiza.
 
-            // Asignar campos de auditoría. Asumimos que el creador del movimiento
-            // se pasa en el cuerpo del documento al crearlo.
-            // Si `created_by` no existe, se asigna.
-            if (!this.created_by) this.created_by = this.modified_by;
-            // `modified_by` siempre se actualiza.
+        // 1. Definir el filtro base para encontrar el stock
+        const stockFilter = { company, warehouse, product };
 
-            // 1. Definir el filtro base para encontrar el stock
-            const stockFilter = { company, warehouse, product };
+        // 2. Obtener el stock ANTES de la modificación para registrar 'stock_before'
+        // Usamos findOne y no findOneAndUpdate aquí para obtener el estado inicial.
+        const stockBeforeUpdate = await Stock.findOne(stockFilter).session(existingSession);
 
-            // 2. Obtener el stock ANTES de la modificación para registrar 'stock_before'
-            // Usamos findOne y no findOneAndUpdate aquí para obtener el estado inicial.
-            const stockBeforeUpdate = await Stock.findOne(stockFilter).session(session);
+        // Si no hay stock, el valor inicial es 0. Si existe, tomamos su cantidad.
+        this.stock_before = stockBeforeUpdate ? stockBeforeUpdate.quantity : 0;
 
-            // Si no hay stock, el valor inicial es 0. Si existe, tomamos su cantidad.
-            this.stock_before = stockBeforeUpdate ? stockBeforeUpdate.quantity : 0;
+        let updatedStock;
 
-            let updatedStock;
+        // 3. Lógica de actualización dependiendo del tipo de movimiento
+        if (type === movementTypes.INBOUND) {
+            // Para entradas, simplemente incrementamos la cantidad.
+            // `upsert: true` crea el documento de stock si no existe.
+            // Al usar `upsert`, debemos proporcionar los campos de auditoría para el caso de creación.
+            updatedStock = await Stock.findOneAndUpdate(
+                stockFilter,
+                { 
+                    $inc: { quantity: quantity_change },
+                    $set: { modified_by: this.modified_by }, // Siempre actualiza quién modificó
+                    $setOnInsert: { created_by: this.modified_by } // Asigna quién creó solo si se inserta
+                },
+                { new: true, upsert: true, session: existingSession, setDefaultsOnInsert: true }
+            );
+        } else if (type === movementTypes.OUTBOUND) {
+            // Para salidas, la lógica es más compleja para evitar stock negativo.
+            // Añadimos al filtro que la cantidad actual debe ser suficiente.
+            const outboundFilter = { ...stockFilter, quantity: { $gte: quantity_change } };
 
-            // 3. Lógica de actualización dependiendo del tipo de movimiento
-            if (type === movementTypes.INBOUND) {
-                // Para entradas, simplemente incrementamos la cantidad.
-                // `upsert: true` crea el documento de stock si no existe.
-                // Al usar `upsert`, debemos proporcionar los campos de auditoría para el caso de creación.
-                updatedStock = await Stock.findOneAndUpdate(
-                    stockFilter,
-                    { 
-                        $inc: { quantity: quantity_change },
-                        $set: { modified_by: this.modified_by }, // Siempre actualiza quién modificó
-                        $setOnInsert: { created_by: this.modified_by } // Asigna quién creó solo si se inserta
-                    },
-                    { new: true, upsert: true, session: session, setDefaultsOnInsert: true }
-                );
-            } else if (type === movementTypes.OUTBOUND) {
-                // Para salidas, la lógica es más compleja para evitar stock negativo.
-                // Añadimos al filtro que la cantidad actual debe ser suficiente.
-                const outboundFilter = { ...stockFilter, quantity: { $gte: quantity_change } };
+            updatedStock = await Stock.findOneAndUpdate(
+                outboundFilter,
+                { 
+                    $inc: { quantity: -quantity_change }, // Restamos la cantidad
+                    $set: { modified_by: this.modified_by } // Actualiza quién modificó
+                },
+                { new: true, session: existingSession } // `upsert` no es necesario aquí, si no hay stock, no se puede sacar.
+            );
 
-                updatedStock = await Stock.findOneAndUpdate(
-                    outboundFilter,
-                    { 
-                        $inc: { quantity: -quantity_change }, // Restamos la cantidad
-                        $set: { modified_by: this.modified_by } // Actualiza quién modificó
-                    },
-                    { new: true, session: session } // `upsert` no es necesario aquí, si no hay stock, no se puede sacar.
-                );
-
-                // Si `updatedStock` es null, significa que la condición `quantity >= quantity_change` no se cumplió.
-                if (!updatedStock) {
-                    throw new Error(`No se puede retirar del almacén. Stock insuficiente para el producto ${product}.`);
-                }
+            // Si `updatedStock` es null, significa que la condición `quantity >= quantity_change` no se cumplió.
+            if (!updatedStock) {
+                throw new Error(`No se puede retirar del almacén. Stock insuficiente para el producto ${product}.`);
             }
-
-            // 4. Registrar el 'stock_after' en el movimiento
-            this.stock_after = updatedStock.quantity;
-        });
+        }
+        // 4. Registrar el 'stock_after' en el movimiento
+        this.stock_after = updatedStock.quantity;
     } catch (error) {
         return next(error); // Pasar el error a Mongoose para detener la operación.
-    } finally {
-        if (closeSession) {
-            session.endSession(); // Asegurarse de que la sesión se cierre solo si la creamos en este hook.
-        }
     }
 
     next();
