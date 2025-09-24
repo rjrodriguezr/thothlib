@@ -11,6 +11,14 @@ const CampaignSchema = new Schema({
         required: [true, 'El nombre de la campaña es obligatorio.'],
         trim: true,
     },
+    /**
+     * Para permitir futuras extensiones de campañas
+     */
+    type: {
+        type: String,
+        required: [true, 'El tipo de campaña es obligatorio.'],
+        default: 'whatsapp'
+    },
 
     /**
      * Referencia al template de WAP que será utilizado.
@@ -71,6 +79,7 @@ const CampaignSchema = new Schema({
  * encuentre eficientemente las campañas que debe procesar.
  */
 CampaignSchema.index({ status: 1, scheduled_at: 1 });
+
 
 // Aplica el plugin de auditoría para rastrear marcas de tiempo y usuarios de creación/actualización.
 CampaignSchema.plugin(modelAuditPlugin);
