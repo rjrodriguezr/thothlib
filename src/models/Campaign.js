@@ -4,6 +4,14 @@ const { modelAuditPlugin } = require('../middlewares');
 
 const CampaignSchema = new Schema({
     /**
+     * Referencia a la empresa propietaria de esta campaña para multi-tenancy.
+     */
+    company: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true,
+    },
+    /**
      * Nombre o identificador interno de la campaña.
      */
     name: {
@@ -21,11 +29,10 @@ const CampaignSchema = new Schema({
     },
 
     /**
-     * Referencia al template de WAP que será utilizado.
+     * Referencia al template de WAP que será utilizado, la clave de los templates para wap es el nombre.
      */
     template: {
-        type: Schema.Types.ObjectId,
-        ref: 'WapTemplate',
+        type: String,
         required: [true, 'Se requiere una plantilla para la campaña.'],
     },
 
@@ -78,8 +85,9 @@ const CampaignSchema = new Schema({
  * Un índice en status y scheduled_at es crucial para que un worker
  * encuentre eficientemente las campañas que debe procesar.
  */
-CampaignSchema.index({ status: 1, scheduled_at: 1 });
-
+CampaignSchema.index({ company: 1, status: 1, scheduled_at: 1 });
+// Índice para buscar campañas por plantilla dentro de una compañía.
+CampaignSchema.index({ company: 1, template: 1 });
 
 // Aplica el plugin de auditoría para rastrear marcas de tiempo y usuarios de creación/actualización.
 CampaignSchema.plugin(modelAuditPlugin);

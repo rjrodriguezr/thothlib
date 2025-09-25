@@ -10,6 +10,7 @@ const WapTemplateSchema = new Schema({
         required: true,
         index: true
     },
+    // valor referencia que devuelve meta pero no es usado para busquedas
     message_template_id: {
         type: String,
         required: true,
