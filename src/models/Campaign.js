@@ -52,10 +52,10 @@ const CampaignSchema = new Schema({
     scheduled_at: {
         type: Date,
         required: true,
-        validate: {
-            validator: (v) => v > new Date(),
-            message: 'La fecha de inicio debe ser en el futuro.'
-        }
+        // validate: {
+        //     validator: (v) => v > new Date(),
+        //     message: 'La fecha de inicio debe ser en el futuro.'
+        // }
     },
 
     /**
