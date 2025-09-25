@@ -75,6 +75,7 @@ const CampaignSchema = new Schema({
         delivered: { type: Number, default: 0 }, // Añadido para mayor granularidad
         read: { type: Number, default: 0 },
         failed: { type: Number, default: 0 },
+        deleted: { type: Number, default: 0 },
     }
 }, {    
     minimize: false,
