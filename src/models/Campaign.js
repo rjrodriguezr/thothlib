@@ -85,11 +85,11 @@ const CampaignSchema = new Schema({
             enum: Object.values(deliveryType),
             default: deliveryType.SENDING, // Estado inicial antes de procesar
         },
-        // Objeto flexible para almacenar los parámetros de la plantilla (header, body, etc.).
-        // Ej: { header1: 'valor1', body1: 'valor2' }
+        // Array de strings para almacenar los parámetros de la plantilla en orden.
+        // Ej: ['valor1', 'valor2']
         params: {
-            type: Schema.Types.Mixed,
-            default: {}
+            type: [String],
+            default: []
         },
         _id: false // No necesitamos un _id para cada subdocumento de destinatario.
     }],
