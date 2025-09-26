@@ -98,7 +98,7 @@ const CampaignSchema = new Schema({
      */
     stats: {
         total: { type: Number, default: 0 },
-        sending: { type: Number, default: 0 },
+        scheduled: { type: Number, default: 0 },
         sent: { type: Number, default: 0 },
         delivered: { type: Number, default: 0 }, // Añadido para mayor granularidad
         read: { type: Number, default: 0 },
@@ -135,7 +135,7 @@ CampaignSchema.pre('save', function(next) {
     if (this.isNew || this.isModified('recipients') || this.isModified('status')) {
         // Si no hay destinatarios o se eliminaron, resetea las estadísticas.
         if (!this.recipients || this.recipients.length === 0) {
-            this.stats = { total: 0, sending: 0, sent: 0, delivered: 0, read: 0, failed: 0, deleted: 0 };
+            this.stats = { total: 0, scheduled: 0, sent: 0, delivered: 0, read: 0, failed: 0, deleted: 0 };
             return next();
         }
 
@@ -144,17 +144,17 @@ CampaignSchema.pre('save', function(next) {
         // Si la campaña está en borrador o programada, las estadísticas de envío deben ser 0.
         if ([campaignStatuses.DRAFT, campaignStatuses.SCHEDULED].includes(this.status)) {
             this.stats = {
-                total: totalRecipients,
-                sending: 0, sent: 0, delivered: 0, read: 0, failed: 0, deleted: 0
-            };
-        }
-        // Si la campaña pasa a 'processing', todos los destinatarios se consideran 'sending'.
-        else if (this.isModified('status') && this.status === campaignStatuses.PROCESSING) {
-            this.stats = {
-                total: totalRecipients,
-                sending: totalRecipients,
+                total: totalRecipients, // El total de destinatarios
+                scheduled: totalRecipients, // Todos están "programados"
                 sent: 0, delivered: 0, read: 0, failed: 0, deleted: 0
             };
+        }
+        // Si la campaña pasa a 'processing', los contadores ya están listos desde el estado 'scheduled'.
+        // La lógica de 'updateRecipientStatus' se encargará de mover los contadores de 'scheduled' a 'sent', etc.
+        else if (this.isModified('status') && this.status === campaignStatuses.PROCESSING) {
+            // No es necesario cambiar las estadísticas aquí. El estado 'scheduled' ya refleja
+            // la cantidad de mensajes listos para ser procesados.
+            // El worker de envío moverá los estados de 'scheduled' a 'sent' o 'failed'.
         }
     }
     next();
