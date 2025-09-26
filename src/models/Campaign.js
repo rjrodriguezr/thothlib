@@ -53,8 +53,12 @@ const CampaignSchema = new Schema({
     scheduled_at: {
         type: Date,
         validate: {
-            validator: (v) => v > new Date(),
-            message: 'La fecha de inicio debe ser en el futuro.'
+            validator: function(v) {
+                // La validación solo se aplica si el campo 'scheduled_at' está presente.
+                if (!v) return true;
+                return v > new Date();
+            },
+            message: 'La fecha de programación debe ser en el futuro.'
         }
     },
 
