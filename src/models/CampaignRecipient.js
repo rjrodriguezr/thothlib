@@ -1,5 +1,3 @@
-// models/CampaignRecipient.js (Nuevo archivo)
-
 const { Schema, model } = require('mongoose');
 const { deliveryType } = require('thothconst');
 
@@ -27,9 +25,11 @@ const CampaignRecipientSchema = new Schema({
     // Estado del envío
     status: {
         type: String,
-        enum: Object.values(deliveryType),
-        default: deliveryType.SENDING,
-        index: true // Indexar para búsquedas rápidas por estado
+        // Permitimos que el estado sea null (para campañas en DRAFT)
+        // o uno de los valores definidos en deliveryType.
+        enum: [...Object.values(deliveryType), null],
+        default: null, // Por defecto, un destinatario no tiene estado.
+        index: true, // Indexar para búsquedas rápidas por estado (ej: 'scheduled')
     },
     // Parámetros de la plantilla
     params: {
