@@ -90,6 +90,14 @@ const CampaignSchema = new Schema({
  * Hook Pre-Save para inicializar las estadísticas al crear una nueva campaña.
  */
 CampaignSchema.pre('save', function(next) {
+    // Si se establece o modifica la fecha de programación y la campaña está en borrador,
+    // se cambia automáticamente a 'programada'.
+    if (this.isModified('scheduled_at') && this.status === campaignStatuses.DRAFT) {
+        if (this.scheduled_at) { // Asegurarse de que se está estableciendo una fecha, no borrándola
+            this.status = campaignStatuses.SCHEDULED;
+        }
+    }
+
     // 1. Lógica de bloqueo de campos si la campaña ya no está en borrador o programada.
     // No se aplica a documentos nuevos.
     if (!this.isNew) {
