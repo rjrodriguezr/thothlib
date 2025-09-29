@@ -43,15 +43,73 @@ class BaseService {
         delete filter.sort;
         delete filter.populate; // Eliminar clave de populate para que no sea parte del filtro
         delete filter.search; // Importante eliminar 'search' para que no sea tratado como un campo de filtro
-
+        
+        // Llama a los métodos auxiliares para construir las partes del filtro.
+        const dateFilter = this._buildDateFilter(filter);
         const baseFilter = this._normalizeMatch(filter);
 
-        // 3. Si no hay término de búsqueda, devolver el filtro base
+        // 3. Si no hay término de búsqueda, combina el filtro base y el de fecha.
         if (!searchTerm) {
-            return baseFilter;
+            return { ...baseFilter, ...dateFilter };
         }
 
-        // 4. Determinar en qué campos buscar: siempre en todos los campos de tipo String del esquema.
+        // 4. Si hay término de búsqueda, construye la cláusula $or.
+        const searchFilter = this._buildSearchFilter(searchTerm);
+        if (Object.keys(searchFilter).length === 0) {
+            // Si no hay campos donde buscar, devuelve la combinación de filtros base.
+            return { ...baseFilter, ...dateFilter };
+        }
+
+        // 5. Combina todos los filtros usando $and.
+        const andClauses = [];
+        if (Object.keys(baseFilter).length > 0) andClauses.push(baseFilter);
+        if (Object.keys(dateFilter).length > 0) andClauses.push(dateFilter);
+        andClauses.push(searchFilter); // El filtro de búsqueda ($or)
+
+        return { $and: andClauses };
+    }
+
+    /**
+     * Construye el objeto de filtro para el rango de fechas a partir del query.
+     * Modifica el objeto `filter` eliminando las claves de fecha.
+     * @param {object} filter - El objeto de filtro (clon del query).
+     * @returns {object} Un objeto de filtro de fecha para Mongoose (ej: { created_at: { $gte: ... } }) o un objeto vacío.
+     * @private
+     */
+    _buildDateFilter(filter) {
+        const dateFilterColumn = filter.dateFilterColumn;
+        const startDate = filter.startDate;
+        const endDate = filter.endDate;
+
+        // Limpia las claves del objeto de filtro principal.
+        delete filter.dateFilterColumn;
+        delete filter.startDate;
+        delete filter.endDate;
+        
+        if (!dateFilterColumn) {
+            return {};
+        }
+
+        const dateConditions = {};
+        if (startDate) {
+            dateConditions.$gte = new Date(startDate);
+        }
+        if (endDate) {
+            const endOfDay = new Date(endDate);
+            endOfDay.setUTCHours(23, 59, 59, 999);
+            dateConditions.$lte = endOfDay;
+        }
+
+        return Object.keys(dateConditions).length > 0 ? { [dateFilterColumn]: dateConditions } : {};
+    }
+
+    /**
+     * Construye el objeto de filtro para la búsqueda de texto libre.
+     * @param {string} searchTerm - El término a buscar.
+     * @returns {object} Un objeto de filtro con una cláusula $or, o un objeto vacío si no hay campos donde buscar.
+     * @private
+     */
+    _buildSearchFilter(searchTerm) {
         const schemaPaths = this.model.schema.paths;
         const fieldsToSearch = Object.keys(schemaPaths).filter(path =>
             schemaPaths[path].instance === 'String' &&
@@ -61,29 +119,14 @@ class BaseService {
 
         if (fieldsToSearch.length === 0) {
             logger.warn(`Se proporcionó el parámetro 'search' pero no se encontraron campos de tipo String para buscar en el modelo ${this.model.modelName}.`);
-            return baseFilter; // No hay campos en los que buscar, devolver filtro base
+            return {};
         }
 
-        // 5. Construir la condición $or para la búsqueda (case-insensitive)
         const orConditions = fieldsToSearch.map(field => ({
             [field]: { $regex: new RegExp(searchTerm, 'i') }
         }));
 
-        // 6. Combinar el filtro base con la condición de búsqueda de forma robusta usando $and.
-        // Esto asegura que las condiciones del filtro base y las condiciones de búsqueda (search)
-        // se apliquen conjuntamente.
-        const finalFilter = {};
-        const andClauses = [];
-
-        // Añadir el filtro base si no está vacío
-        if (Object.keys(baseFilter).length > 0) {
-            andClauses.push(baseFilter);
-        }
-        // Añadir la condición de búsqueda
-        andClauses.push({ $or: orConditions });
-
-        finalFilter.$and = andClauses;
-        return finalFilter;
+        return { $or: orConditions };
     }
 
     /**
