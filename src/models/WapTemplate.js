@@ -19,8 +19,7 @@ const WapTemplateSchema = new Schema({
     name: {
         type: String,
         required: [true, 'El nombre de la plantilla es obligatorio.'],
-        trim: true,
-        unique: true,
+        trim: true
     },
     // Estado del proceso de revisión de la plantilla.
     status: {
@@ -60,7 +59,7 @@ const WapTemplateSchema = new Schema({
 });
 
 // Crea un índice compuesto para asegurar que una plantilla sea única para una empresa, nombre e idioma dados.
-WapTemplateSchema.index({ company: 1, name: 1, message_template_id: 1 }, { unique: true });
+WapTemplateSchema.index({ company: 1, name: 1}, { unique: true });
 
 // Aplica el plugin de auditoría para rastrear marcas de tiempo y usuarios de creación/actualización.
 WapTemplateSchema.plugin(modelAuditPlugin);
