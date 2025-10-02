@@ -13,7 +13,6 @@ const WapTemplateSchema = new Schema({
     // valor referencia que devuelve meta pero no es usado para busquedas
     message_template_id: {
         type: String,
-        required: true,
         trim: true,
         unique: true,
     },
@@ -29,6 +28,7 @@ const WapTemplateSchema = new Schema({
         type: String,
         required: true,
         enum: Object.values(whatsappTemplateStatus),
+        default: whatsappTemplateStatus.PENDING,
     },
     // Código de idioma de la plantilla (p. ej., 'en_US', 'es_MX').
     language: {
