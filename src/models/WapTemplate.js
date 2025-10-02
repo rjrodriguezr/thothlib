@@ -14,7 +14,6 @@ const WapTemplateSchema = new Schema({
     message_template_id: {
         type: String,
         trim: true,
-        unique: true,
     },
     // El nombre de la plantilla, tal como se define en Meta.
     name: {
