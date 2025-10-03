@@ -25,8 +25,8 @@ const { headers, WEBHOOK_SOURCE_TYPE } = require('thothconst');
  * @returns {Promise<void>} No devuelve un valor directamente, sino que finaliza la petición con un error o la pasa al siguiente middleware.
  */
 const authClient = async (req, res, next) => {
-    logger.debug("[authClient] INICIO de la validacion del request");
-    logger.debug({ msg: "[authClient]", headers: req.headers });
+    // logger.debug("[authClient] INICIO de la validacion del request");
+    // logger.debug({ msg: "[authClient]", headers: req.headers });
 
     // Extraer datos de usuario desde headers personalizados    
     const sourceType = req.header(headers.SOURCE_TYPE);
@@ -48,7 +48,7 @@ const authClient = async (req, res, next) => {
             userId,
             username,
         };
-        logger.trace({file:'[authClient]',token:req.token});
+        // logger.trace({file:'[authClient]',token:req.token});
     }
 
     next();
