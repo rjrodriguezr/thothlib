@@ -31,7 +31,7 @@ const CampaignRecipientSchema = new Schema({
         default: null, // Por defecto, un destinatario no tiene estado.
         index: true, // Indexar para búsquedas rápidas por estado (ej: 'scheduled')
     },
-     // Parámetros de la plantilla
+    // Parámetros de la plantilla
     header_param: String,
     body_params: Schema.Types.Mixed,
 });

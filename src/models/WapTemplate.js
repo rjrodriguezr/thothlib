@@ -56,6 +56,9 @@ const WapTemplateSchema = new Schema({
         type: String,
         trim: true,
     },
+    // Parámetros de la plantilla
+    header_param: String,
+    body_params: Schema.Types.Mixed,
 });
 
 // Crea un índice compuesto para asegurar que una plantilla sea única para una empresa, nombre e idioma dados.

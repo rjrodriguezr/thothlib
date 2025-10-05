@@ -58,7 +58,7 @@ class BaseController {
             return res.status(501).json({ message: `Functionality for '${action}' is not implemented.` });
         }
 
-        logger.error(logMessage, error);
+        logger.error(logMessage);
         logger.debug(error.stack);
 
         // The service layer throws an error containing "not found" for 404 cases
