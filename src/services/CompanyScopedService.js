@@ -1,4 +1,3 @@
-const logger = require('../../lib/logger');
 const BaseService = require('./BaseService');
 
 class CompanyScopedService extends BaseService {
