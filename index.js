@@ -10,7 +10,6 @@ const redisService = require('./lib/redisService');
 // This assumes each directory has an index.js file that exports its public members.
 const controllers = require('./src/controllers');
 const middlewares = require('./src/middlewares');
-const models = require('./src/models');
 const services = require('./src/services');
 
 try {
@@ -32,6 +31,5 @@ module.exports = {
   // Namespaced modules
   controllers,
   middlewares,
-  models,
   services,
 };
