@@ -76,7 +76,7 @@ class CompanyScopedService extends BaseService {
         // Ahora que tenemos el documento correcto, podemos usar la lógica de actualización de la base.
         // Sin embargo, BaseService.update vuelve a buscar, así que replicamos la parte final.
         Object.assign(doc, body);
-        doc.modified_by = username;
+        doc.updatedBy = username;
         const saved = await doc.save();
         return { status: 'updated', updated: saved._id };
     }
@@ -92,8 +92,8 @@ class CompanyScopedService extends BaseService {
             throw new Error(`${this.model.modelName} not found`);
         }
         // Replicamos la lógica final de borrado lógico.
-        doc.active = false;
-        doc.modified_by = username;
+        doc.isActive = false;
+        doc.updatedBy = username;
         const saved = await doc.save();
         return { status: 'deleted', deleted: saved._id };
     }
