@@ -4,11 +4,11 @@ const mongoose = require('mongoose');
  * Un plugin de Mongoose que añade campos de auditoría comunes y middleware a un esquema.
  *
  * Los campos añadidos son:
- * - isActive: {Boolean} - Indica si el documento está activo.
- * - createdAt: {Date} - Fecha de creación del documento.
- * - createdBy: {String} - Quién creó el documento.
- * - updatedAt: {Date} - Fecha de la última modificación del documento.
- * - updatedBy: {String} - Quién realizó la última modificación.
+ * - active: {Boolean} - Indica si el documento está activo.
+ * - created_at: {Date} - Fecha de creación del documento.
+ * - created_by: {String} - Quién creó el documento.
+ * - updated_at: {Date} - Fecha de la última modificación del documento.
+ * - updated_by: {String} - Quién realizó la última modificación.
  *
  * También añade hooks 'pre' para gestionar automáticamente las fechas de creación y modificación.
  *
@@ -17,23 +17,23 @@ const mongoose = require('mongoose');
 const modelAuditPlugin = (schema) => {
   // Añade los campos comunes de auditoría al esquema.
   schema.add({
-    isActive: {
+    active: {
       type: Boolean,
       default: true
     },
-    createdAt: {
+    created_at: {
       type: Date,
       default: Date.now
     },
-    createdBy: {
+    created_by: {
       type: String,
       required: [true, 'Created by is required']
     },
-    updatedAt: {
+    updated_at: {
       type: Date,
       default: Date.now
     },
-    updatedBy: {
+    updated_by: {
       type: String,
       required: [true, 'Modified by is required']
     }
@@ -47,25 +47,25 @@ const modelAuditPlugin = (schema) => {
    */
   schema.pre('save', function (next) {
     const now = new Date();
-    // Si 'createdAt' no existe, asígnalo.
-    if (!this.createdAt) {
-      this.createdAt = now;
+    // Si 'created_at' no existe, asígnalo.
+    if (!this.created_at) {
+      this.created_at = now;
     }
-    // Siempre actualiza 'updatedAt' al guardar.
-    this.updatedAt = now;
-    
+    // Siempre actualiza 'updated_at' al guardar.
+    this.updated_at = now;
+
     next();
   });
 
   /**
    * Middleware que se ejecuta antes de las operaciones de actualización como 'updateOne' y 'findOneAndUpdate'.
-   * Establece el campo 'updatedAt' con la fecha y hora actual para reflejar la modificación.
+   * Establece el campo 'updated_at' con la fecha y hora actual para reflejar la modificación.
    * @param {Function} next - Función callback para pasar al siguiente middleware.
    */
   schema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
     // 'this' se refiere a la consulta (query), no al documento.
     // Usamos 'this.set()' para añadir la actualización al objeto de consulta.
-    this.set({ updatedAt: new Date() });
+    this.set({ updated_at: new Date() });
     next();
   });
 };
