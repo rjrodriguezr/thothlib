@@ -41,8 +41,8 @@ const modelAuditPlugin = (schema) => {
 
   /**
    * Middleware que se ejecuta antes de la operación 'save'.
-   * Establece las fechas 'createdAt' y 'updatedAt' al momento de la creación.
-   * Si el documento ya tiene 'createdAt', solo actualiza 'updatedAt'.
+   * Establece las fechas 'created_at' y 'updated_at' al momento de la creación.
+   * Si el documento ya tiene 'created_at', solo actualiza 'updated_at'.
    * @param {Function} next - Función callback para pasar al siguiente middleware.
    */
   schema.pre('save', function (next) {

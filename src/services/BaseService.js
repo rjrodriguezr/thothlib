@@ -46,7 +46,7 @@ class BaseService {
         delete filter.sort;
         delete filter.populate; // Eliminar clave de populate para que no sea parte del filtro
         delete filter.search; // Importante eliminar 'search' para que no sea tratado como un campo de filtro
-        
+
         // Llama a los métodos auxiliares para construir las partes del filtro.
         const dateFilter = this._buildDateFilter(filter);
         const baseFilter = this._normalizeMatch(filter);
@@ -76,7 +76,7 @@ class BaseService {
      * Construye el objeto de filtro para el rango de fechas a partir del query.
      * Modifica el objeto `filter` eliminando las claves de fecha.
      * @param {object} filter - El objeto de filtro (clon del query).
-     * @returns {object} Un objeto de filtro de fecha para Mongoose (ej: { createdAt: { $gte: ... } }) o un objeto vacío.
+     * @returns {object} Un objeto de filtro de fecha para Mongoose (ej: { created_at: { $gte: ... } }) o un objeto vacío.
      * @private
      */
     _buildDateFilter(filter) {
@@ -88,7 +88,7 @@ class BaseService {
         delete filter.dateFilterColumn;
         delete filter.startDate;
         delete filter.endDate;
-        
+
         if (!dateFilterColumn) {
             return {};
         }
@@ -117,7 +117,7 @@ class BaseService {
         const fieldsToSearch = Object.keys(schemaPaths).filter(path =>
             schemaPaths[path].instance === 'String' &&
             !path.startsWith('_') && // Excluir __v, etc.
-            !['company', 'createdBy', 'updatedBy'].includes(path) // Excluir campos de auditoría/relación
+            !['company', 'created_by', 'updated_by'].includes(path) // Excluir campos de auditoría/relación
         );
 
         if (fieldsToSearch.length === 0) {
@@ -157,7 +157,7 @@ class BaseService {
             projection = query.fields.replace(/,/g, ' ');
         } else {
             // Por defecto, se excluyen los campos de auditoría y estado.
-            projection = '-createdBy -createdAt -updatedBy -updatedAt';
+            projection = '-created_by -created_at -updated_by -updated_at';
         }
         sql = sql.select(projection);
 
@@ -208,7 +208,7 @@ class BaseService {
      * @param {string} [query.fields] - Una cadena de campos separados por comas para la proyección (ej. 'name,email').
      * @param {number} [query.page=1] - El número de página a recuperar.
      * @param {number} [query.limit=10] - El número de documentos por página.
-     * @param {string} [query.sort='-createdAt'] - El campo y orden para ordenar (ej. 'name,-age').
+     * @param {string} [query.sort='-created_at'] - El campo y orden para ordenar (ej. 'name,-age').
      * @returns {Promise<object>} Devuelve un objeto con los resultados paginados y metadatos.
      * @throws {Error} Lanza una excepción si ocurre un error durante la consulta a la base de datos.
      * @param {object} [prebuiltFilter=null] - Un filtro opcional pre-construido.
@@ -219,7 +219,7 @@ class BaseService {
         const page = parseInt(query.page, 10) || 1;
         const limit = parseInt(query.limit, 10) || 10;
         const skip = (page - 1) * limit;
-        const sortOrder = query.sort ? query.sort.replace(/,/g, ' ') : '-createdAt';
+        const sortOrder = query.sort ? query.sort.replace(/,/g, ' ') : '-created_at';
 
 
         // 2. Construir la consulta principal y la de conteo
@@ -314,8 +314,8 @@ class BaseService {
     async insert(companyId, username, body) {
         const payload = {
             ...body,
-            createdBy: username,
-            updatedBy: username
+            created_by: username,
+            updated_by: username
         };
 
         const doc = new this.model(payload);
@@ -347,7 +347,7 @@ class BaseService {
             throw new Error(`${this.model.modelName} not found`);
         }
         Object.assign(doc, updates);
-        doc.updatedBy = username;
+        doc.updated_by = username;
         const saved = await doc.save(); // Dispara hooks como pre('save')
         logger.info({ status: 'updated', updated: saved._id });
         return { status: 'updated', updated: saved._id };
@@ -374,7 +374,7 @@ class BaseService {
         if (!doc) throw new Error(`${this.model.modelName} not found`);
 
         doc.isActive = false;
-        doc.updatedBy = username;
+        doc.updated_by = username;
         const saved = await doc.save(); // Dispara los hooks
         logger.info({ status: 'deleted', deleted: saved._id });
         return { status: 'deleted', deleted: saved._id };
