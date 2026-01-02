@@ -5,6 +5,9 @@ class BaseService {
      * @param {mongoose.Model} model - El modelo de Mongoose con el que operará el servicio.
      */
     constructor(model) {
+        if (!model) {
+            throw new Error('A Mongoose model must be provided to the service constructor.');
+        }
         this.model = model;
     }
 

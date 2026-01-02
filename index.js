@@ -14,9 +14,9 @@ const services = require('./src/services');
 
 try {
   const packageJson = require('./package.json');
-  logger.info(`--- EXECUTING VERSION ${packageJson.version} VERSION OF thothlib ---`);
+  console.log(`--- EXECUTING VERSION ${packageJson.version} VERSION OF thothlib ---`);
 } catch (error) {
-  logger.error('Error leyendo package.json:', error.message);
+  console.error('Error leyendo package.json:', error.message);
 }
 
 module.exports = {
