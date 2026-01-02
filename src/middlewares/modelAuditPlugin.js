@@ -45,7 +45,7 @@ const modelAuditPlugin = (schema) => {
    * Si el documento ya tiene 'created_at', solo actualiza 'updated_at'.
    * @param {Function} next - Función callback para pasar al siguiente middleware.
    */
-  schema.pre('save', function (next) {
+  schema.pre('save', function () {
     const now = new Date();
     // Si 'created_at' no existe, asígnalo.
     if (!this.created_at) {
@@ -54,7 +54,6 @@ const modelAuditPlugin = (schema) => {
     // Siempre actualiza 'updated_at' al guardar.
     this.updated_at = now;
 
-    next();
   });
 
   /**
