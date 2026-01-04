@@ -1,5 +1,5 @@
 const BaseController = require('./BaseController');
-const { CoreController } = require('./CoreController');
+const { CoreController } = require('./core.controller');
 
 module.exports = {
     BaseController,
