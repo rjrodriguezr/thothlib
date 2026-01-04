@@ -1,6 +1,6 @@
 // Libs - Core, standalone utilities
 const axiosClient = require('./lib/axiosClient');
-const constants = require('thothconst');
+const constants = require('./constants');
 const crypt = require('./lib/crypt');
 const logger = require('./lib/logger');
 const mongoDBService = require('./lib/mongoDBService');
