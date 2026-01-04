@@ -1,0 +1,9 @@
+node_modules/
+logs/
+test.js
+.git/
+.gitignore
+
+# User requested exclusions
+src/services/core.service.js
+src/controllers/core.controller.js
