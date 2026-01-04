@@ -61,11 +61,10 @@ const modelAuditPlugin = (schema) => {
    * Establece el campo 'updated_at' con la fecha y hora actual para reflejar la modificación.
    * @param {Function} next - Función callback para pasar al siguiente middleware.
    */
-  schema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
+  schema.pre(['updateOne', 'findOneAndUpdate'], function () {
     // 'this' se refiere a la consulta (query), no al documento.
     // Usamos 'this.set()' para añadir la actualización al objeto de consulta.
     this.set({ updated_at: new Date() });
-    next();
   });
 };
 

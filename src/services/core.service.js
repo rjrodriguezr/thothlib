@@ -34,20 +34,29 @@ class CoreService {
 
     /**
      * Updates an existing document by ID.
+     * 
+     * Default behavior:
+     * - new: true (Returns the modified document instead of the original)
+     * - runValidators: true (Runs update validators against the model's schema)
+     * 
+     * Can create the document if it doesn't exist by passing { upsert: true } in options.
      * Note: Uses an arrow function passed to _execute to ensure 'this' refers to the CoreService instance (lexical scoping), allowing access to this.model.
+     * 
      * @param {string} id - The ID of the document to update.
      * @param {Object} data - The data to update.
+     * @param {Object} [options={}] - Additional Mongoose Query options (e.g. { upsert: true }).
      * @returns {Promise<Object|null>} The status and ID of the updated document, or null if not found.
      */
-    async update(id, data) {
+    async update(id, data, options = {}) {
         return this._execute(async () => {
-            const result = await this.model.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+            const finalOptions = { new: true, runValidators: true, ...options };
+            const result = await this.model.findByIdAndUpdate(id, data, finalOptions);
             if (!result) {
                 logger.warn(`Document with id ${id} not found in ${this.model.modelName} for update.`);
                 return null;
             }
             return { status: 'updated', _id: result._id };
-        }, 'update', { id, data });
+        }, 'update', { id, data, options });
     }
 
     /**
