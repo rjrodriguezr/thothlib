@@ -61,16 +61,16 @@ class CoreController {
 
     /**
      * Creates a new resource.
-     * Injects `created_by` and `updated_by` if `req.token.username` is present.
+     * Injects `created_by` and `updated_by` if `req.user.username` is present.
      * @param {Object} req - The request object.
      * @param {Object} res - The response object.
      */
     post = this._catchAsync(async (req, res) => {
         logger.debug(`[CoreController] Executing post with body: ${JSON.stringify(req.body)}`);
         const body = req.body;
-        if (req.token && req.token.username) {
-            body.created_by = req.token.username;
-            body.updated_by = req.token.username;
+        if (req.user && req.user.username) {
+            body.created_by = req.user.username;
+            body.updated_by = req.user.username;
         }
         const result = await this.service.create(body);
         res.status(201).json(result);
@@ -78,7 +78,7 @@ class CoreController {
 
     /**
      * Updates an existing resource by ID.
-     * Injects `updated_by` if `req.token.username` is present and updates `updated_at`.
+     * Injects `updated_by` if `req.user.username` is present and updates `updated_at`.
      * @param {Object} req - The request object.
      * @param {Object} res - The response object.
      */
@@ -88,8 +88,8 @@ class CoreController {
         const body = req.body;
 
         body.updated_at = Date.now();
-        if (req.token && req.token.username) {
-            body.updated_by = req.token.username;
+        if (req.user && req.user.username) {
+            body.updated_by = req.user.username;
         }
 
         const result = await this.service.update(id, body);

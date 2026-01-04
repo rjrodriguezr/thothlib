@@ -72,7 +72,7 @@ class BaseController {
      * Inserta un nuevo recurso utilizando el servicio base.
      */
     async insert(req, res) {
-        const { companyId, username } = req.token;
+        const { companyId, username } = req.user;
         const newObject = await this.service.insert(companyId, username, req.body);
         res.status(201).json(newObject);
     }
@@ -82,7 +82,7 @@ class BaseController {
      * De lo contrario, devuelve una lista paginada.
      */
     async get(req, res) {
-        const companyId = req.token.companyId;
+        const companyId = req.user.companyId;
         const { id } = req.params;
         const queryParams = req.query;
 
@@ -102,7 +102,7 @@ class BaseController {
      * Realiza un borrado lógico (soft delete) de un recurso.
      */
     async delete(req, res) {
-        const { companyId, username } = req.token;
+        const { companyId, username } = req.user;
         const { id } = req.params;
         const result = await this.service.delete(companyId, username, id);
         res.status(200).json(result);
@@ -112,7 +112,7 @@ class BaseController {
      * Actualiza un recurso existente.
      */
     async update(req, res) {
-        const { companyId, username } = req.token;
+        const { companyId, username } = req.user;
         const { id } = req.params;
         const result = await this.service.update(companyId, username, id, req.body);
         res.status(200).json(result);
