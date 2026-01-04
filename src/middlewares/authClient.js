@@ -1,5 +1,5 @@
 const logger = require('../../lib/logger');
-const { headers, WEBHOOK_SOURCE_TYPE } = require('thothconst');
+const { headers, WEBHOOK_SOURCE_TYPE } = require('../../constants');
 /**
  * @module authClient
  * @description Middleware de Express para autenticar y autorizar peticiones internas entre servicios.
@@ -36,7 +36,7 @@ const authClient = async (req, res, next) => {
         logger.trace("[authClient] No sourceType presente por lo que se procesan cabeceras de llamados internos");
         const companyId = req.header(headers.COMPANY_ID);
         const userId = req.header(headers.USER_ID);
-        const username = req.header(headers.USER_NAME); 
+        const username = req.header(headers.USER_NAME);
 
         if (!(companyId || userId || username)) {
             return res.status(401).json({ error: 'Faltan Headers de datos del usuario' });
